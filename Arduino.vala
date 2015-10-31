@@ -1,103 +1,127 @@
+/*
+ * Copyright (c) 2011-2015 THOMAS Developers (https://thomas-projekt.de)
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public
+ * License along with this program; if not, write to the
+ * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
+ */
+
 public class THOMAS.Arduino : SerialDevice {
-	public enum MessagePriority {
-		INFO,
-		WARNING,
-		ERROR
-	}
-	private Mutex mutex = Mutex();
+    public enum MessagePriority {
+        INFO,
+        WARNING,
+        ERROR
+    }
+    private Mutex mutex = Mutex ();
 
-	private bool minimalmode_enabled = false;
+    private bool minimalmode_enabled = false;
 
-	public Arduino (string tty_name) {
-		base (tty_name, 9600);
-	}
+    public Arduino (string tty_name) {
+        base (tty_name, 9600);
+    }
 
-	public void wait_for_initialisation () {
-		while (base.read_package ()[0] != 0);
-	}
+    public void wait_for_initialisation () {
+        while (base.read_package ()[0] != 0) {
+        }
+    }
 
-	public void setup (bool minimalmode_enabled) {
-		// Heartbeat-Thread
-		new Thread<int> (null, () => {
-			while (true) {
-				mutex.@lock();
+    public void setup (bool minimalmode_enabled) {
+        /* Heartbeat-Thread */
+        new Thread<int> (null, () => {
+            while (true) {
+                mutex.@lock ();
 
-				// Heartbeat senden
-				base.send_package ({0});
+                /* Heartbeat senden */
+                base.send_package ({ 0 });
 
-				if(base.read_package()[0] != 1)
-					error("Fehler beim Empfangen der Heartbeat Antwort");
+                if (base.read_package ()[0] != 1) {
+                    error ("Fehler beim Empfangen der Heartbeat Antwort");
+                }
 
-				mutex.unlock();
-				// Eine Sekunde warten
-				Thread.usleep (1000 * 1000);
-			}
-		});
+                mutex.unlock ();
+                /* Eine Sekunde warten */
+                Thread.usleep (1000 * 1000);
+            }
+        });
 
-		if(!minimalmode_enabled) {
-			new Thread<int> (null, () => {
-				while(true) {
-					// TODO: Könnte man implementieren, wenn man Lust hätte!
-					get_usensor_distance();
-				}
-			});
-		}
+        if (!minimalmode_enabled) {
+            new Thread<int> (null, () => {
+                while (true) {
+                    /* TODO: Könnte man implementieren, wenn man Lust hätte! */
+                    get_usensor_distance ();
+                }
+            });
+        }
 
-		if(minimalmode_enabled)
-			enable_minimalmode();
-	}
+        if (minimalmode_enabled) {
+            enable_minimalmode ();
+        }
+    }
 
-	// TODO: Rückgabe prüfen
-	public void print_message (MessagePriority priority, string message) {
-		uint8[] package = {};
-		package += 1;
-		package += (uint8) priority;
-		package += (uint8) message.data.length;
+    /* TODO: Rückgabe prüfen */
+    public void print_message (MessagePriority priority, string message) {
+        uint8[] package = {};
+        package += 1;
+        package += (uint8)priority;
+        package += (uint8)message.data.length;
 
-		for (int i = 0; i < message.data.length; i++) {
-			package += message.data[i];
-		}
+        for (int i = 0; i < message.data.length; i++) {
+            package += message.data[i];
+        }
 
-		mutex.@lock();
+        mutex.@lock ();
 
-		base.send_package (package);
+        base.send_package (package);
 
-		mutex.unlock();
-	}
+        mutex.unlock ();
+    }
 
-	public void enable_minimalmode() {
-		mutex.@lock();
-		
-		base.send_package({5, 1});
+    public void enable_minimalmode () {
+        mutex.@lock ();
 
-		if(base.read_package()[0] != 1) {
-			error("Fehler beim aktivieren des Minimalmodus");
-		}
+        base.send_package ({ 5, 1 });
 
-		mutex.unlock();
+        if (base.read_package ()[0] != 1) {
+            error ("Fehler beim aktivieren des Minimalmodus");
+        }
 
-		minimalmode_enabled = true;
+        mutex.unlock ();
 
-		debug("Minimalmodus aktiviert");
-	}
+        minimalmode_enabled = true;
 
-	public List<int> get_usensor_distance() {
-		if(minimalmode_enabled)
-			error("Es können keine USensor Daten im Minimalmodus abgerufen werden");
+        debug ("Minimalmodus aktiviert");
+    }
 
-		List<uint8> distances = new List<uint8> ();
+    public List<int> get_usensor_distance () {
+        if (minimalmode_enabled) {
+            error ("Es können keine USensor Daten im Minimalmodus abgerufen werden");
+        }
 
-		mutex.@lock();
+        List<uint8> distances = new List<uint8> ();
 
-		base.send_package({2, 0, 0});
+        mutex.@lock ();
 
-		uint8[] data = base.read_package();
+        base.send_package ({ 2, 0, 0 });
 
-		mutex.unlock();
+        uint8[] data = base.read_package ();
 
-		for(int i = 0; i < data.length; i++)
-			distances.append(data[i] * 2);
+        mutex.unlock ();
 
-		return distances;
-	}
+        for (int i = 0; i < data.length; i++) {
+            distances.append (data[i] * 2);
+        }
+
+        return distances;
+    }
 }
