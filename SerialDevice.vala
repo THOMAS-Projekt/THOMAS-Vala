@@ -2,6 +2,7 @@ public abstract class THOMAS.SerialDevice : Object {
 	private int handle;
 
 	protected SerialDevice (string tty_name, Posix.speed_t baudrate) {
+		
 		// Handle erstellen
 		handle = Posix.open (tty_name, Posix.O_RDWR | Posix.O_NOCTTY | Posix.LOG_NDELAY);
 
@@ -36,25 +37,7 @@ public abstract class THOMAS.SerialDevice : Object {
 		}
 
 		debug ("Schnittstelle %s initialisiert.", tty_name);
-	}
 
-	protected uint8[] read_package () {
-		uint8[] header = new uint8[1];
-
-		if (Posix.read (handle, header, 1) != 1) {
-			error ("Lesen des Paketheaders fehlgeschlagen.");
-		}
-
-		uint8 package_length = header[0];
-		uint8[] package = new uint8[package_length];
-
-		uint8 received = (uint8)Posix.read (handle, package, package_length);
-
-		if (received != package_length) {
-			error ("Lesen des Paketes fehlgeschlagen. Habe %u von %u bytes erhalten.", received, package_length);
-		}
-
-		return package;
 	}
 
 	protected void send_package (uint8[] package) {
@@ -74,5 +57,28 @@ public abstract class THOMAS.SerialDevice : Object {
 		if (Posix.write (handle, data, data.length) != data.length) {
 			error ("Senden des Paketes fehlgeschlagen.");
 		}
+	}
+
+	protected uint8[] read_package () {
+		uint8[] header = new uint8[1];
+
+		if (Posix.read (handle, header, 1) != 1) {
+			error ("Lesen des Paketheaders fehlgeschlagen.");
+		}
+
+		uint8 package_length = header[0];
+
+		uint8[] package = {};
+
+		uint8[] temp_buffer = new uint8[1];
+
+		for(int i = 0; i < package_length; i++) {
+			if(Posix.read (handle, temp_buffer, 1) != 1)
+				error("Fehler beim Lesen des Paketes");
+
+			package += temp_buffer[0];
+		}
+
+		return package;
 	}
 }
