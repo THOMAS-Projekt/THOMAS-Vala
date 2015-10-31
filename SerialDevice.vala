@@ -1,19 +1,12 @@
 public abstract class THOMAS.SerialDevice : Object {
 	private int handle;
 
-	public SerialDevice (string tty_name, Posix.speed_t baudrate) {
+	protected SerialDevice (string tty_name, Posix.speed_t baudrate) {
 		// Handle erstellen
 		handle = Posix.open (tty_name, Posix.O_RDWR | Posix.O_NOCTTY | Posix.LOG_NDELAY);
 
 		if (handle == -1) {
 			error ("Öffnen von %s fehlgeschlagen.", tty_name);
-		}
-
-		// Device öffnen
-		FileStream? tty = FileStream.fdopen (handle, "rw");
-
-		if (tty == null) {
-			error ("Laden von %s fehlgeschlagen.", tty_name);
 		}
 
 		Posix.termios termios;
@@ -23,28 +16,63 @@ public abstract class THOMAS.SerialDevice : Object {
 			error ("Speichern der TTY-Attribute fehlgeschlagen.");
 		}
 
-		// TODO: Überprüfen ob wirklich notwendig.
-		Posix.termios new_termios = termios;
-
 		// Baudrate setzen
-		new_termios.c_ispeed = baudrate;
-		new_termios.c_ospeed = baudrate;
+		termios.c_ispeed = baudrate;
+		termios.c_ospeed = baudrate;
 
 		// Programm soll auf Antwort des Arduinos warten
-		new_termios.c_cc[Posix.VMIN] = 1;
-		new_termios.c_cc[Posix.VTIME] = 1;
+		termios.c_cc[Posix.VMIN] = 1;
+		termios.c_cc[Posix.VTIME] = 1;
 
 		// Schnittstelle konfigurieren
-		new_termios.c_cflag |= Posix.CS8;
-		new_termios.c_iflag &= ~(Posix.IGNBRK | Posix.BRKINT | Posix.ICRNL | Posix.IXON );
-		new_termios.c_oflag &= ~(Posix.OPOST | Posix.ONLCR);
-		new_termios.c_lflag &= ~ (Posix.ECHO | Linux.Termios.ECHOCTL | Posix.ICANON | Posix.ISIG | Posix.IEXTEN);
+		termios.c_cflag |= Posix.CS8;
+		termios.c_iflag &= ~(Posix.IGNBRK | Posix.BRKINT | Posix.ICRNL | Posix.IXON );
+		termios.c_oflag &= ~(Posix.OPOST | Posix.ONLCR);
+		termios.c_lflag &= ~(Posix.ECHO | Linux.Termios.ECHOCTL | Posix.ICANON | Posix.ISIG | Posix.IEXTEN);
 
 		// Neue Konfiguration übernehmen
-		if (Posix.tcsetattr (handle, Posix.TCSAFLUSH, new_termios) != 0) {
+		if (Posix.tcsetattr (handle, Posix.TCSAFLUSH, termios) != 0) {
 			error ("Setzen von TTY-Attributen fehlgeschlagen.");
 		}
 
 		debug ("Schnittstelle %s initialisiert.", tty_name);
+	}
+
+	protected uint8[] read_package () {
+		uint8[] header = new uint8[1];
+
+		if (Posix.read (handle, header, 1) != 1) {
+			error ("Lesen des Paketheaders fehlgeschlagen.");
+		}
+
+		uint8 package_length = header[0];
+		uint8[] package = new uint8[package_length];
+
+		uint8 received = (uint8)Posix.read (handle, package, package_length);
+
+		if (received != package_length) {
+			error ("Lesen des Paketes fehlgeschlagen. Habe %u von %u bytes erhalten.", received, package_length);
+		}
+
+		return package;
+	}
+
+	protected void send_package (uint8[] package) {
+		if (package.length > uint8.MAX) {
+			error ("Paket zu groß.");
+		}
+
+		uint8 package_length = (uint8)package.length;
+		uint8[] data = {};
+
+		data += package_length;
+
+		for (int i = 0; i < package_length; i++) {
+			data += package[i];
+		}
+
+		if (Posix.write (handle, data, data.length) != data.length) {
+			error ("Senden des Paketes fehlgeschlagen.");
+		}
 	}
 }

@@ -7,6 +7,10 @@ public class THOMAS.Main : Object {
 	private static string? arduino_tty = null;
 
 	public static void main (string[] args) {
+		if (!Thread.supported ()) {
+			warning ("Threads werden möglicherweise nicht unterstützt.");
+		}
+
 		var options = new OptionContext ("Beispiel");
 		options.set_help_enabled (true);
 		options.add_main_entries (OPTIONS, null);
@@ -22,5 +26,12 @@ public class THOMAS.Main : Object {
 
 	public Main () {
 		var arduino = new Arduino (arduino_tty == null ? "/dev/ttyACM0" : arduino_tty);
+		arduino.wait_for_initialisation ();
+
+		debug ("Arduino gestartet.");
+
+		arduino.run ();
+
+		new MainLoop ().run ();
 	}
 }
