@@ -57,7 +57,7 @@ public abstract class THOMAS.SerialDevice : Object {
         debug ("Schnittstelle %s initialisiert.", tty_name);
     }
 
-    protected void send_package (uint8[] package) {
+    protected void send_package (uint8[] package, bool send_header = true) {
         if (package.length > uint8.MAX) {
             error ("Paket zu groß.");
         }
@@ -65,10 +65,14 @@ public abstract class THOMAS.SerialDevice : Object {
         uint8 package_length = (uint8)package.length;
         uint8[] data = {};
 
-        data += package_length;
+        if (send_header) {
+            data += package_length;
 
-        for (int i = 0; i < package_length; i++) {
-            data += package[i];
+            for (int i = 0; i < package_length; i++) {
+                data += package[i];
+            }
+        } else {
+            data = package;
         }
 
         if (Posix.write (handle, data, data.length) != data.length) {
