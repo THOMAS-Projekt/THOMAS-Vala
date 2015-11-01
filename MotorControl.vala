@@ -59,19 +59,16 @@ public class THOMAS.MotorControl : SerialDevice {
     public void set_motor_speed (Motor motor, short speed) {
         /* Geschwindigkeitswerte des linken Motors aktualisieren */
         if (motor == Motor.LEFT || motor == Motor.BOTH) {
-            current_speed[MOTOR_LEFT_ID] = wanted_speed[MOTOR_LEFT_ID] = speed;
+            wanted_speed[MOTOR_LEFT_ID] = speed;
         }
 
         /* Geschwindigkeitswerte des rechten Motors aktualisieren */
         if (motor == Motor.RIGHT || motor == Motor.BOTH) {
-            current_speed[MOTOR_RIGHT_ID] = wanted_speed[MOTOR_RIGHT_ID] = speed;
+            wanted_speed[MOTOR_RIGHT_ID] = speed;
         }
 
-        /* Drehrichtung senden */
-        base.send_package ({ 35, 35, 6, 5, (uint8)motor, (uint8)(speed >= 0) }, false);
-
-        /* Geschwindigkeit senden */
-        base.send_package ({ 35, 35, 6, 2, (uint8)motor, (uint8)speed.abs () }, false);
+        /* Geschwindigkeit setzen */
+        update_motor_speed (motor, speed);
     }
 
     public void accelerate_to_motor_speed (Motor motor, short speed) {
@@ -95,16 +92,28 @@ public class THOMAS.MotorControl : SerialDevice {
             bool speed_reached = true;
 
             if (current_speed[MOTOR_LEFT_ID] < wanted_speed[MOTOR_LEFT_ID]) {
-                /* Geschwindigkeit schrittweise erhöhen */
-                set_motor_speed (Motor.LEFT, current_speed[MOTOR_LEFT_ID] + (wanted_speed[MOTOR_LEFT_ID] > current_speed[MOTOR_LEFT_ID] ? MAX_ACCELERATION : -MAX_ACCELERATION));
+                /* Vorzeichen bestimmen */
+                short acceleration_sign = (wanted_speed[MOTOR_LEFT_ID] > current_speed[MOTOR_LEFT_ID] ? 1 : -1);
+
+                /* Ausstehende Geschwindigkeitsänderung bestimmen */
+                short pending_difference = (wanted_speed[MOTOR_LEFT_ID].abs () - current_speed[MOTOR_LEFT_ID].abs ()).abs ();
+
+                /* Geschwindigkeit entweder um Differenz, oder um Maximalbeschleunigung erhöhen */
+                update_motor_speed (Motor.LEFT, current_speed[MOTOR_LEFT_ID] + (pending_difference > MAX_ACCELERATION ? MAX_ACCELERATION : pending_difference) * acceleration_sign);
 
                 /* Es war noch eine Geschwindigkeitsänderung nötig. */
                 speed_reached = false;
             }
 
             if (current_speed[MOTOR_RIGHT_ID] < wanted_speed[MOTOR_RIGHT_ID]) {
-                /* Geschwindigkeit schrittweise erhöhen */
-                set_motor_speed (Motor.RIGHT, current_speed[MOTOR_RIGHT_ID] + (wanted_speed[MOTOR_RIGHT_ID] > current_speed[MOTOR_RIGHT_ID] ? MAX_ACCELERATION : -MAX_ACCELERATION));
+                /* Vorzeichen bestimmen */
+                short acceleration_sign = (wanted_speed[MOTOR_RIGHT_ID] > current_speed[MOTOR_RIGHT_ID] ? 1 : -1);
+
+                /* Ausstehende Geschwindigkeitsänderung bestimmen */
+                short pending_difference = (wanted_speed[MOTOR_RIGHT_ID].abs () - current_speed[MOTOR_RIGHT_ID].abs ()).abs ();
+
+                /* Geschwindigkeit entweder um Differenz, oder um Maximalbeschleunigung erhöhen */
+                update_motor_speed (Motor.RIGHT, current_speed[MOTOR_RIGHT_ID] + (pending_difference > MAX_ACCELERATION ? MAX_ACCELERATION : pending_difference) * acceleration_sign);
 
                 /* Es war noch eine Geschwindigkeitsänderung nötig. */
                 speed_reached = false;
@@ -113,5 +122,23 @@ public class THOMAS.MotorControl : SerialDevice {
             /* Prüfen ob der Timer weiterlaufen soll. */
             return !speed_reached;
         });
+    }
+
+    private void update_motor_speed (Motor motor, short speed) {
+        /* Geschwindigkeitswerte des linken Motors aktualisieren */
+        if (motor == Motor.LEFT || motor == Motor.BOTH) {
+            current_speed[MOTOR_LEFT_ID] = speed;
+        }
+
+        /* Geschwindigkeitswerte des rechten Motors aktualisieren */
+        if (motor == Motor.RIGHT || motor == Motor.BOTH) {
+            current_speed[MOTOR_RIGHT_ID] = speed;
+        }
+
+        /* Drehrichtung senden */
+        base.send_package ({ 35, 35, 6, 5, (uint8)motor, (uint8)(speed >= 0) }, false);
+
+        /* Geschwindigkeit senden */
+        base.send_package ({ 35, 35, 6, 2, (uint8)motor, (uint8)speed.abs () }, false);
     }
 }
