@@ -23,6 +23,7 @@ public class THOMAS.Arduino : SerialDevice {
         WARNING,
         ERROR
     }
+
     private Mutex mutex = Mutex ();
 
     private bool minimalmode_enabled = false;
@@ -55,6 +56,8 @@ public class THOMAS.Arduino : SerialDevice {
             }
         });
 
+        new Thread<int> (null, update_wifi_information);
+
         if (!minimalmode_enabled) {
             new Thread<int> (null, () => {
                 while (true) {
@@ -62,9 +65,7 @@ public class THOMAS.Arduino : SerialDevice {
                     get_usensor_distance ();
                 }
             });
-        }
-
-        if (minimalmode_enabled) {
+        } else {
             enable_minimalmode ();
         }
     }
@@ -83,6 +84,10 @@ public class THOMAS.Arduino : SerialDevice {
         mutex.@lock ();
 
         base.send_package (package);
+
+        if (base.read_package ()[0] != message.data.length) {
+            error ("Der Rückgabetext stimmt nicht mit dem gesendeten Text überein!");
+        }
 
         mutex.unlock ();
     }
@@ -123,5 +128,47 @@ public class THOMAS.Arduino : SerialDevice {
         }
 
         return distances;
+    }
+
+    public int update_wifi_information () {
+        while (true) {
+            /* Update SSID */
+            {
+                string ssid = "LOL!";
+
+                uint8[] package = { 4, 0, (uint8)ssid.data.length };
+
+                for (int i = 0; i < ssid.data.length; i++) {
+                    package += ssid.data[i];
+                }
+
+                mutex.@lock ();
+
+                /* SSID Updaten */
+                base.send_package (package);
+
+                if (base.read_package ()[0] != 1) {
+                    error ("Fehler beim Senden der SSID");
+                }
+
+                mutex.unlock ();
+            }
+
+            /* Update Signalstrength */
+            {
+                int signal_strength = 40;
+
+                mutex.@lock ();
+                base.send_package ({ 4, 1, (uint8)signal_strength });
+
+                if (base.read_package ()[0] != 1) {
+                    error ("Fehler beim Senden der Signalstrength");
+                }
+
+                mutex.unlock ();
+            }
+
+            Thread.usleep (3000 * 1000);
+        }
     }
 }
