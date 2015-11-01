@@ -19,11 +19,13 @@
 
 public class THOMAS.Main : Object {
     private static const OptionEntry[] OPTIONS = {
+        { "debug", 'd', 0, OptionArg.NONE, ref debug_mode, "Aktiviert den Debugmodus", null },
         { "arduino-tty", 'a', 0, OptionArg.STRING, ref arduino_tty, "Port des Arduinos", "PORT" },
         { "enable-minimalmode", 'm', 0, OptionArg.NONE, ref enable_minimalmode, "Aktiviert den Minimalmodus des Arduinos", null },
         { null }
     };
 
+    private static bool debug_mode = false;
     private static string? arduino_tty = null;
     private static bool enable_minimalmode = false;
 
@@ -45,27 +47,39 @@ public class THOMAS.Main : Object {
         new Main ();
     }
 
+    private MainLoop main_loop;
+
+    private Logger logger;
     private NetworkManager network_manager;
     private Arduino arduino;
-
-    private MainLoop main_loop;
 
     public Main () {
         main_loop = new MainLoop ();
 
-        network_manager = new NetworkManager ();
+        debug ("Initialisiere Logger...");
+        {
+            logger = new Logger ();
+            logger.set_debug_mode (debug_mode);
+        }
 
-        arduino = new Arduino (arduino_tty == null ? "/dev/ttyACM0" : arduino_tty, enable_minimalmode);
-        arduino.wait_for_initialisation ();
-        arduino.setup ();
+        debug ("Initialisiere Netzwerk-Manager...");
+        {
+            network_manager = new NetworkManager ();
+        }
 
-        debug ("Arduino initialisiert.");
+        debug ("Initialisiere Arduino...");
+        {
+            arduino = new Arduino (arduino_tty == null ? "/dev/ttyACM0" : arduino_tty, enable_minimalmode);
+            arduino.wait_for_initialisation ();
+            arduino.setup ();
+        }
 
         debug ("Verknüpfe Ereignisse...");
+        {
+            connect_signals ();
+        }
 
-        connect_signals ();
-
-        debug ("Beginne Hauptschleife...");
+        info ("Initialisierung abgeschlossen.");
 
         main_loop.run ();
     }
