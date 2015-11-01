@@ -42,6 +42,7 @@ vala_precompile (VALA_C
     NetworkManager.vala
     Arduino.vala
     SerialDevice.vala
+    MotorControl.vala
 PACKAGES
     gio-2.0
     gee-0.8
