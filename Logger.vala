@@ -26,8 +26,6 @@ public class THOMAS.Logger : Object {
 
         /* GLibs Log-Handler überschreiben */
         Log.set_default_handler (log_handler);
-
-        warning ("Ich bin eine\nNachricht mit nem Tollen\nZeilenumbruch.... :P");
     }
 
     public void set_debug_mode (bool debug_mode) {
@@ -52,16 +50,19 @@ public class THOMAS.Logger : Object {
                 print_indentation (header_length);
             }
 
-            stdout.printf ("%s\n", message);
+            stdout.printf ("%s\n", line);
         }
     }
 
     private int print_header (LogLevelFlags log_levels) {
         string level;
+        string time = get_time ();
         int color_code = 30 + 60;
 
         switch (log_levels) {
-            case LogLevelFlags.LEVEL_ERROR :
+            case LogLevelFlags.LEVEL_CRITICAL :
+            case LogLevelFlags.LEVEL_ERROR:
+            default:
                 level = "FEHLER";
 
                 /* Rot */
@@ -87,7 +88,6 @@ public class THOMAS.Logger : Object {
                 break;
 
             case LogLevelFlags.LEVEL_WARNING:
-            default:
                 level = "WARNUNG";
 
                 /* Gelb */
@@ -96,14 +96,24 @@ public class THOMAS.Logger : Object {
                 break;
         }
 
-        string time = "asdf";
-
         stdout.printf ("\x001b[%dm[%s %s]\x001b[0m ", color_code, level, time);
 
         return (level.length + time.length + 4);
     }
 
-    private void print_indentation (int lenght) {
-        //char[] indentation = {' '};
+    private void print_indentation (int length) {
+        char[] indentation = {};
+
+        for (int i = 0; i < length; i++) {
+            indentation += ' ';
+        }
+
+        stdout.printf ((string)indentation);
+    }
+
+    private string get_time () {
+        var now = new GLib.DateTime.now_local ();
+
+        return "%.2d:%.2d:%.2d.%.6d".printf (now.get_hour (), now.get_minute (), now.get_second (), now.get_microsecond ());
     }
 }
