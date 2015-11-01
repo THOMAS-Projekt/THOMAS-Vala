@@ -28,6 +28,10 @@ public class THOMAS.Arduino : SerialDevice {
 
     private bool minimalmode_enabled = false;
 
+    private NM.DeviceWifi? wifi_device = null;
+
+    private NM.AccessPoint? active_accesspoint = null;
+
     public Arduino (string tty_name) {
         base (tty_name, 9600);
     }
@@ -39,35 +43,49 @@ public class THOMAS.Arduino : SerialDevice {
 
     public void setup (bool minimalmode_enabled) {
         /* Heartbeat-Thread */
-        new Thread<int> (null, () => {
-            while (true) {
-                mutex.@lock ();
+        Timeout.add (1000, () => {
+            mutex.@lock ();
 
-                /* Heartbeat senden */
-                base.send_package ({ 0 });
+            /* Heartbeat senden */
+            base.send_package ({ 0 });
 
-                if (base.read_package ()[0] != 1) {
-                    error ("Fehler beim Empfangen der Heartbeat Antwort");
-                }
-
-                mutex.unlock ();
-                /* Eine Sekunde warten */
-                Thread.usleep (1000 * 1000);
+            if (base.read_package ()[0] != 1) {
+                error ("Fehler beim Empfangen der Heartbeat Antwort");
             }
+
+            mutex.unlock ();
+
+            return true;
         });
 
-        new Thread<int> (null, update_wifi_information);
-
         if (!minimalmode_enabled) {
-            new Thread<int> (null, () => {
-                while (true) {
-                    /* TODO: Könnte man implementieren, wenn man Lust hätte! */
-                    get_usensor_distance ();
-                }
+            Timeout.add (1000, () => {
+                /* TODO: Könnte man implementieren, wenn man Lust hätte! */
+                get_usensor_distance ();
+
+                return true;
             });
         } else {
             enable_minimalmode ();
         }
+
+        /* TODO: Evtl. ist es sinnvoll diese in den TCP Server zu implementieren und dann
+         *  die entsprechenden Arduino Funktionen aufzurufen*/
+        NM.Client nm_client = new NM.Client ();
+        nm_client.get_devices ().@foreach ((device) => {
+            if (device is NM.DeviceWifi) {
+                wifi_device = (NM.DeviceWifi)device;
+            }
+        });
+
+        if (wifi_device != null) {
+            update_active_access_point ();
+            wifi_device.notify["active-access-point"].connect (update_active_access_point);
+        } else {
+            warning ("Kein WLAN-Adapter gefunden!");
+        }
+
+        change_cam_position (0, -10);
     }
 
     /* TODO: Rückgabe prüfen */
@@ -130,45 +148,87 @@ public class THOMAS.Arduino : SerialDevice {
         return distances;
     }
 
-    public int update_wifi_information () {
-        while (true) {
-            /* Update SSID */
-            {
-                string ssid = "LOL!";
+    public int set_cam_position (uint8 camera, uint8 angle) {
+        mutex.@lock ();
 
-                uint8[] package = { 4, 0, (uint8)ssid.data.length };
+        base.send_package ({ 3, 0, camera, 0, angle });
 
-                for (int i = 0; i < ssid.data.length; i++) {
-                    package += ssid.data[i];
-                }
+        uint8 new_angle = base.read_package ()[0];
 
-                mutex.@lock ();
+        mutex.unlock ();
 
-                /* SSID Updaten */
-                base.send_package (package);
+        return new_angle;
+    }
 
-                if (base.read_package ()[0] != 1) {
-                    error ("Fehler beim Senden der SSID");
-                }
+    public int change_cam_position (uint8 camera, int change_angle) {
+        uint8 direction = change_angle < 0 ? 0 : 1;
 
-                mutex.unlock ();
-            }
-
-            /* Update Signalstrength */
-            {
-                int signal_strength = 40;
-
-                mutex.@lock ();
-                base.send_package ({ 4, 1, (uint8)signal_strength });
-
-                if (base.read_package ()[0] != 1) {
-                    error ("Fehler beim Senden der Signalstrength");
-                }
-
-                mutex.unlock ();
-            }
-
-            Thread.usleep (3000 * 1000);
+        /*
+         * TODO: Geht das auch schöner?! Auch das hierrüber
+         * Wäre viel sinnvoller die Daten am Arduino in einen signed char zu ḱonvertieren,
+         * sodass man die "direction" nicht angeben muss
+         */
+        if (direction == 0) {
+            change_angle = change_angle * (-1);
         }
+
+        change_angle = change_angle < 0 ? 0 : change_angle > 180 ? 180 : change_angle;
+
+        mutex.@lock ();
+
+        base.send_package ({ 3, 0, camera, 1, direction, (uint8)change_angle });
+
+        uint8 new_angle = base.read_package ()[0];
+
+        mutex.unlock ();
+
+        return new_angle;
+    }
+
+    public void update_active_access_point () {
+        active_accesspoint = wifi_device.get_active_access_point ();
+
+        update_ssid_information ();
+
+        update_signal_strength_information ();
+
+        if (active_accesspoint != null) {
+            active_accesspoint.notify["strength"].connect (update_signal_strength_information);
+        }
+    }
+
+    public void update_ssid_information () {
+        string ssid = active_accesspoint != null ? (string)active_accesspoint.get_ssid ().data : "No connection";
+
+        uint8[] package = { 4, 0, (uint8)ssid.data.length };
+
+        for (int i = 0; i < ssid.data.length; i++) {
+            package += ssid.data[i];
+        }
+
+        mutex.@lock ();
+
+        /* SSID Updaten */
+        base.send_package (package);
+
+        if (base.read_package ()[0] != 1) {
+            error ("Fehler beim Senden der SSID");
+        }
+
+        mutex.unlock ();
+    }
+
+    public void update_signal_strength_information () {
+        /* Update Signalstrength */
+        uint8 signal_strength = active_accesspoint != null ? active_accesspoint.get_strength () : 0;
+
+        mutex.@lock ();
+        base.send_package ({ 4, 1, (uint8)signal_strength });
+
+        if (base.read_package ()[0] != 1) {
+            error ("Fehler beim Senden der Signalstrength");
+        }
+
+        mutex.unlock ();
     }
 }

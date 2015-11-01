@@ -48,6 +48,7 @@ public class THOMAS.Main : Object {
 
     public Main () {
         var arduino = new Arduino (arduino_tty == null ? "/dev/ttyACM0" : arduino_tty);
+        
         arduino.wait_for_initialisation ();
 
         debug ("Arduino gestartet.");
