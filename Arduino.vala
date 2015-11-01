@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015 THOMAS Developers (https://thomas-projekt.de)
+ * Copyright (c) 2011-2015 THOMAS-Projekt (https://thomas-projekt.de)
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public
@@ -18,22 +18,39 @@
  */
 
 public class THOMAS.Arduino : SerialDevice {
+    private static const uint BAUDRATE = 9600;
+
     public enum MessagePriority {
         INFO,
         WARNING,
         ERROR
     }
 
-    private Mutex mutex = Mutex ();
+    public bool minimalmode_enabled { get; private set; }
 
-    private bool minimalmode_enabled = false;
+    public Arduino (string tty_name, bool minimalmode_enabled) {
+        base (tty_name, BAUDRATE);
+        base.configuration_loaded.connect ((termios) => {
+            /* Baudrate setzen */
+            termios.c_ispeed = baudrate;
+            termios.c_ospeed = baudrate;
 
-    private NM.DeviceWifi? wifi_device = null;
+            /* Programm soll auf Antwort des Arduinos warten */
+            termios.c_cc[Posix.VMIN] = 1;
+            termios.c_cc[Posix.VTIME] = 1;
 
-    private NM.AccessPoint? active_accesspoint = null;
+            /* Schnittstelle konfigurieren */
+            termios.c_cflag |= Posix.CS8;
+            termios.c_iflag &= ~(Posix.IGNBRK | Posix.BRKINT | Posix.ICRNL | Posix.IXON);
+            termios.c_oflag &= ~(Posix.OPOST | Posix.ONLCR);
+            termios.c_lflag &= ~(Posix.ECHO | Linux.Termios.ECHOCTL | Posix.ICANON | Posix.ISIG | Posix.IEXTEN);
 
-    public Arduino (string tty_name) {
-        base (tty_name, 9600);
+            /* Neue Konfiguration zurückgeben */
+            return termios;
+        });
+        base.attach ();
+
+        this.minimalmode_enabled = minimalmode_enabled;
     }
 
     public void wait_for_initialisation () {
@@ -41,54 +58,31 @@ public class THOMAS.Arduino : SerialDevice {
         }
     }
 
-    public void setup (bool minimalmode_enabled) {
-        /* Heartbeat-Thread */
+    public void setup () {
+        /* Heartbeat-Timer */
         Timeout.add (1000, () => {
-            mutex.@lock ();
-
             /* Heartbeat senden */
             base.send_package ({ 0 });
 
             if (base.read_package ()[0] != 1) {
-                error ("Fehler beim Empfangen der Heartbeat Antwort");
+                error ("Fehler beim Empfangen der Heartbeat Antwort.");
             }
-
-            mutex.unlock ();
 
             return true;
         });
 
-        if (!minimalmode_enabled) {
+        if (minimalmode_enabled) {
+            enable_minimalmode ();
+        } else {
             Timeout.add (1000, () => {
                 /* TODO: Könnte man implementieren, wenn man Lust hätte! */
-                get_usensor_distance ();
+                get_usensor_distances ();
 
                 return true;
             });
-        } else {
-            enable_minimalmode ();
         }
-
-        /* TODO: Evtl. ist es sinnvoll diese in den TCP Server zu implementieren und dann
-         *  die entsprechenden Arduino Funktionen aufzurufen*/
-        NM.Client nm_client = new NM.Client ();
-        nm_client.get_devices ().@foreach ((device) => {
-            if (device is NM.DeviceWifi) {
-                wifi_device = (NM.DeviceWifi)device;
-            }
-        });
-
-        if (wifi_device != null) {
-            update_active_access_point ();
-            wifi_device.notify["active-access-point"].connect (update_active_access_point);
-        } else {
-            warning ("Kein WLAN-Adapter gefunden!");
-        }
-
-        change_cam_position (0, -10);
     }
 
-    /* TODO: Rückgabe prüfen */
     public void print_message (MessagePriority priority, string message) {
         uint8[] package = {};
         package += 1;
@@ -99,47 +93,22 @@ public class THOMAS.Arduino : SerialDevice {
             package += message.data[i];
         }
 
-        mutex.@lock ();
-
         base.send_package (package);
 
         if (base.read_package ()[0] != message.data.length) {
             error ("Der Rückgabetext stimmt nicht mit dem gesendeten Text überein!");
         }
-
-        mutex.unlock ();
     }
 
-    public void enable_minimalmode () {
-        mutex.@lock ();
-
-        base.send_package ({ 5, 1 });
-
-        if (base.read_package ()[0] != 1) {
-            error ("Fehler beim aktivieren des Minimalmodus");
-        }
-
-        mutex.unlock ();
-
-        minimalmode_enabled = true;
-
-        debug ("Minimalmodus aktiviert");
-    }
-
-    public List<int> get_usensor_distance () {
+    public List<int> get_usensor_distances () {
         if (minimalmode_enabled) {
-            error ("Es können keine USensor Daten im Minimalmodus abgerufen werden");
+            error ("Es können keine USensor Daten im Minimalmodus abgerufen werden.");
         }
-
-        List<uint8> distances = new List<uint8> ();
-
-        mutex.@lock ();
 
         base.send_package ({ 2, 0, 0 });
 
+        List<uint8> distances = new List<uint8> ();
         uint8[] data = base.read_package ();
-
-        mutex.unlock ();
 
         for (int i = 0; i < data.length; i++) {
             distances.append (data[i] * 2);
@@ -149,86 +118,49 @@ public class THOMAS.Arduino : SerialDevice {
     }
 
     public int set_cam_position (uint8 camera, uint8 angle) {
-        mutex.@lock ();
-
         base.send_package ({ 3, 0, camera, 0, angle });
 
-        uint8 new_angle = base.read_package ()[0];
-
-        mutex.unlock ();
-
-        return new_angle;
+        return base.read_package ()[0];
     }
 
-    public int change_cam_position (uint8 camera, int change_angle) {
-        uint8 direction = change_angle < 0 ? 0 : 1;
+    public int change_cam_position (uint8 camera, int degree) {
+        uint8 direction = (uint8)(degree >= 0);
+        uint8 validated_degree = (uint8)degree.abs ().clamp (5, 180);
 
-        /*
-         * TODO: Geht das auch schöner?! Auch das hierrüber
-         * Wäre viel sinnvoller die Daten am Arduino in einen signed char zu ḱonvertieren,
-         * sodass man die "direction" nicht angeben muss
-         */
-        if (direction == 0) {
-            change_angle = change_angle * (-1);
-        }
+        base.send_package ({ 3, 0, camera, 1, direction, validated_degree });
 
-        change_angle = change_angle < 0 ? 0 : change_angle > 180 ? 180 : change_angle;
-
-        mutex.@lock ();
-
-        base.send_package ({ 3, 0, camera, 1, direction, (uint8)change_angle });
-
-        uint8 new_angle = base.read_package ()[0];
-
-        mutex.unlock ();
-
-        return new_angle;
+        return base.read_package ()[0];
     }
 
-    public void update_active_access_point () {
-        active_accesspoint = wifi_device.get_active_access_point ();
-
-        update_ssid_information ();
-
-        update_signal_strength_information ();
-
-        if (active_accesspoint != null) {
-            active_accesspoint.notify["strength"].connect (update_signal_strength_information);
-        }
-    }
-
-    public void update_ssid_information () {
-        string ssid = active_accesspoint != null ? (string)active_accesspoint.get_ssid ().data : "No connection";
-
+    public void update_ssid (string ssid) {
         uint8[] package = { 4, 0, (uint8)ssid.data.length };
 
         for (int i = 0; i < ssid.data.length; i++) {
             package += ssid.data[i];
         }
 
-        mutex.@lock ();
-
-        /* SSID Updaten */
         base.send_package (package);
 
         if (base.read_package ()[0] != 1) {
-            error ("Fehler beim Senden der SSID");
+            error ("Fehler beim Setzen der SSID.");
         }
-
-        mutex.unlock ();
     }
 
-    public void update_signal_strength_information () {
-        /* Update Signalstrength */
-        uint8 signal_strength = active_accesspoint != null ? active_accesspoint.get_strength () : 0;
-
-        mutex.@lock ();
-        base.send_package ({ 4, 1, (uint8)signal_strength });
+    public void update_signal_strength (uint8 signal_strength) {
+        base.send_package ({ 4, 1, signal_strength });
 
         if (base.read_package ()[0] != 1) {
-            error ("Fehler beim Senden der Signalstrength");
+            error ("Fehler beim Setzen der Signalstärke.");
+        }
+    }
+
+    private void enable_minimalmode () {
+        base.send_package ({ 5, 1 });
+
+        if (base.read_package ()[0] != 1) {
+            error ("Fehler beim Aktivieren des Minimalmodus.");
         }
 
-        mutex.unlock ();
+        debug ("Minimalmodus aktiviert.");
     }
 }

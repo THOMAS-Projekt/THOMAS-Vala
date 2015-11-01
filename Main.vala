@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015 THOMAS Developers (https://thomas-projekt.de)
+ * Copyright (c) 2011-2015 THOMAS-Projekt (https://thomas-projekt.de)
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public
@@ -19,14 +19,13 @@
 
 public class THOMAS.Main : Object {
     private static const OptionEntry[] OPTIONS = {
-        { "arduinotty", 'a', 0, OptionArg.STRING, ref arduino_tty, "Port des Arduinos", "PORT" },
+        { "arduino-tty", 'a', 0, OptionArg.STRING, ref arduino_tty, "Port des Arduinos", "PORT" },
         { "enable-minimalmode", 'm', 0, OptionArg.NONE, ref enable_minimalmode, "Aktiviert den Minimalmodus des Arduinos", null },
         { null }
     };
 
     private static string? arduino_tty = null;
-
-    private static string? enable_minimalmode = null;
+    private static bool enable_minimalmode = false;
 
     public static void main (string[] args) {
         if (!Thread.supported ()) {
@@ -46,15 +45,36 @@ public class THOMAS.Main : Object {
         new Main ();
     }
 
+    private NetworkManager network_manager;
+    private Arduino arduino;
+
+    private MainLoop main_loop;
+
     public Main () {
-        var arduino = new Arduino (arduino_tty == null ? "/dev/ttyACM0" : arduino_tty);
-        
+        main_loop = new MainLoop ();
+
+        network_manager = new NetworkManager ();
+
+        arduino = new Arduino (arduino_tty == null ? "/dev/ttyACM0" : arduino_tty, enable_minimalmode);
         arduino.wait_for_initialisation ();
+        arduino.setup ();
 
-        debug ("Arduino gestartet.");
+        debug ("Arduino initialisiert.");
 
-        arduino.setup (enable_minimalmode == null ? false : true);
+        debug ("Verknüpfe Ereignisse...");
 
-        new MainLoop ().run ();
+        connect_signals ();
+
+        debug ("Beginne Hauptschleife...");
+
+        main_loop.run ();
+    }
+
+    private void connect_signals () {
+        network_manager.ssid_changed.connect ((ssid) => {
+            arduino.update_ssid (ssid == null ? "Nicht verbunden" : ssid);
+        });
+
+        network_manager.signal_strength_changed.connect (arduino.update_signal_strength);
     }
 }

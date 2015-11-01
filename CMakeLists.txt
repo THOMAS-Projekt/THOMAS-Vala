@@ -38,6 +38,7 @@ link_directories (${DEPS_LIBRARY_DIRS})
 # Configure precompile
 vala_precompile (VALA_C
     Main.vala
+    NetworkManager.vala
     Arduino.vala
     SerialDevice.vala
 PACKAGES

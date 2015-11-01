@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015 THOMAS Developers (https://thomas-projekt.de)
+ * Copyright (c) 2011-2015 THOMAS-Projekt (https://thomas-projekt.de)
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public
@@ -18,9 +18,26 @@
  */
 
 public abstract class THOMAS.SerialDevice : Object {
-    private int handle;
+    public string tty_name { protected get; construct; }
+    public uint baudrate { protected get; construct; }
 
-    protected SerialDevice (string tty_name, Posix.speed_t baudrate) {
+    /*
+     * Wird beim Laden der Konfiguration ausgeführt und bietet die Möglichkeit die Konfiguration
+     * fürs Serielle Device entsprechend anzupassen.
+     */
+    protected signal Posix.termios configuration_loaded (Posix.termios configuration);
+
+    private int handle = -1;
+
+    protected SerialDevice (string tty_name, uint baudrate) {
+        Object (tty_name: tty_name, baudrate: baudrate);
+    }
+
+    ~SerialDevice () {
+        detach ();
+    }
+
+    protected void attach () {
         /* Handle erstellen */
         handle = Posix.open (tty_name, Posix.O_RDWR | Posix.O_NOCTTY | Posix.LOG_NDELAY);
 
@@ -32,22 +49,11 @@ public abstract class THOMAS.SerialDevice : Object {
 
         /* Attribute abrufen */
         if (Posix.tcgetattr (handle, out termios) != 0) {
-            error ("Speichern der TTY-Attribute fehlgeschlagen.");
+            error ("Lesen von TTY-Attributen fehlgeschlagen.");
         }
 
-        /* Baudrate setzen */
-        termios.c_ispeed = baudrate;
-        termios.c_ospeed = baudrate;
-
-        /* Programm soll auf Antwort des Arduinos warten */
-        termios.c_cc[Posix.VMIN] = 1;
-        termios.c_cc[Posix.VTIME] = 1;
-
-        /* Schnittstelle konfigurieren */
-        termios.c_cflag |= Posix.CS8;
-        termios.c_iflag &= ~(Posix.IGNBRK | Posix.BRKINT | Posix.ICRNL | Posix.IXON);
-        termios.c_oflag &= ~(Posix.OPOST | Posix.ONLCR);
-        termios.c_lflag &= ~(Posix.ECHO | Linux.Termios.ECHOCTL | Posix.ICANON | Posix.ISIG | Posix.IEXTEN);
+        /* Der übergeordneten Klasse die Möglichkeit zum Anpassen der Konfiguration geben */
+        termios = configuration_loaded (termios);
 
         /* Neue Konfiguration übernehmen */
         if (Posix.tcsetattr (handle, Posix.TCSAFLUSH, termios) != 0) {
@@ -55,6 +61,17 @@ public abstract class THOMAS.SerialDevice : Object {
         }
 
         debug ("Schnittstelle %s initialisiert.", tty_name);
+    }
+
+    protected void detach () {
+        if (handle == -1) {
+            return;
+        }
+
+        /* Schnittstelle schließen */
+        Posix.close (handle);
+
+        debug ("Schnittstelle %s geschlossen.", tty_name);
     }
 
     protected void send_package (uint8[] package, bool send_header = true) {
