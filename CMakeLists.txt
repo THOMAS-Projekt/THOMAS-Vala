@@ -28,7 +28,7 @@ add_definitions (-w)
 
 # Auf Abhängigkeiten prüfen
 find_package (PkgConfig)
-pkg_check_modules (DEPS REQUIRED gthread-2.0 gio-2.0 gee-0.8)
+pkg_check_modules (DEPS REQUIRED gthread-2.0 gio-2.0 gee-0.8 libnm-glib)
 
 # Bibliotheken linken
 add_definitions (${DEPS_CFLAGS})
@@ -45,6 +45,7 @@ PACKAGES
     gee-0.8
     posix
     linux
+    libnm-glib
 OPTIONS
     --thread
     --target-glib 2.32
