@@ -21,11 +21,7 @@ public abstract class THOMAS.SerialDevice : Object {
     public string tty_name { protected get; construct; }
     public uint baudrate { protected get; construct; }
 
-    /*
-     * Wird beim Laden der Konfiguration ausgeführt und bietet die Möglichkeit die Konfiguration
-     * fürs Serielle Device entsprechend anzupassen.
-     */
-    protected signal Posix.termios configuration_loaded (Posix.termios configuration);
+    protected delegate Posix.termios ConfigurationHandler (Posix.termios configuration);
 
     private int handle = -1;
 
@@ -37,7 +33,7 @@ public abstract class THOMAS.SerialDevice : Object {
         detach ();
     }
 
-    protected void attach () {
+    protected void attach (ConfigurationHandler configuration_handler) {
         /* Handle erstellen */
         handle = Posix.open (tty_name, Posix.O_RDWR | Posix.O_NOCTTY | Posix.LOG_NDELAY);
 
@@ -53,7 +49,7 @@ public abstract class THOMAS.SerialDevice : Object {
         }
 
         /* Der übergeordneten Klasse die Möglichkeit zum Anpassen der Konfiguration geben */
-        termios = configuration_loaded (termios);
+        termios = configuration_handler (termios);
 
         /* Neue Konfiguration übernehmen */
         if (Posix.tcsetattr (handle, Posix.TCSAFLUSH, termios) != 0) {

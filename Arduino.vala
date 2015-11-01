@@ -30,7 +30,7 @@ public class THOMAS.Arduino : SerialDevice {
 
     public Arduino (string tty_name, bool minimalmode_enabled) {
         base (tty_name, BAUDRATE);
-        base.configuration_loaded.connect ((termios) => {
+        base.attach ((termios) => {
             /* Baudrate setzen */
             termios.c_ispeed = baudrate;
             termios.c_ospeed = baudrate;
@@ -48,7 +48,6 @@ public class THOMAS.Arduino : SerialDevice {
             /* Neue Konfiguration zurückgeben */
             return termios;
         });
-        base.attach ();
 
         this.minimalmode_enabled = minimalmode_enabled;
     }
