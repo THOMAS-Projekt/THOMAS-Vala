@@ -98,38 +98,36 @@ public class THOMAS.MotorControl : SerialDevice {
 
         /* Neue Beschleunigung beginnen */
         accelerate_timer_id = Timeout.add (100, () => {
-            bool speed_reached = true;
+            /* Ausstehende Geschwindigkeitsänderungen bestimmen */
+            short pending_difference_left = (wanted_speed[MOTOR_LEFT_ID].abs () - current_speed[MOTOR_LEFT_ID].abs ()).abs ();
+            short pending_difference_right = (wanted_speed[MOTOR_RIGHT_ID].abs () - current_speed[MOTOR_RIGHT_ID].abs ()).abs ();
 
-            if (current_speed[MOTOR_LEFT_ID] < wanted_speed[MOTOR_LEFT_ID]) {
+            if (pending_difference_left > 0) {
                 /* Vorzeichen bestimmen */
                 short acceleration_sign = (wanted_speed[MOTOR_LEFT_ID] > current_speed[MOTOR_LEFT_ID] ? 1 : -1);
 
-                /* Ausstehende Geschwindigkeitsänderung bestimmen */
-                short pending_difference = (wanted_speed[MOTOR_LEFT_ID].abs () - current_speed[MOTOR_LEFT_ID].abs ()).abs ();
-
                 /* Geschwindigkeit entweder um Differenz, oder um Maximalbeschleunigung erhöhen */
-                current_speed[MOTOR_LEFT_ID] += (pending_difference > MAX_ACCELERATION ? MAX_ACCELERATION : pending_difference) * acceleration_sign;
-
-                /* Es war noch eine Geschwindigkeitsänderung nötig. */
-                speed_reached = false;
+                current_speed[MOTOR_LEFT_ID] += (pending_difference_left > MAX_ACCELERATION ? MAX_ACCELERATION : pending_difference_left) * acceleration_sign;
             }
 
-            if (current_speed[MOTOR_RIGHT_ID] < wanted_speed[MOTOR_RIGHT_ID]) {
+            if (pending_difference_right > 0) {
                 /* Vorzeichen bestimmen */
                 short acceleration_sign = (wanted_speed[MOTOR_RIGHT_ID] > current_speed[MOTOR_RIGHT_ID] ? 1 : -1);
 
-                /* Ausstehende Geschwindigkeitsänderung bestimmen */
-                short pending_difference = (wanted_speed[MOTOR_RIGHT_ID].abs () - current_speed[MOTOR_RIGHT_ID].abs ()).abs ();
-
                 /* Geschwindigkeit entweder um Differenz, oder um Maximalbeschleunigung erhöhen */
-                current_speed[MOTOR_RIGHT_ID] += (pending_difference > MAX_ACCELERATION ? MAX_ACCELERATION : pending_difference) * acceleration_sign;
-
-                /* Es war noch eine Geschwindigkeitsänderung nötig. */
-                speed_reached = false;
+                current_speed[MOTOR_RIGHT_ID] += (pending_difference_right > MAX_ACCELERATION ? MAX_ACCELERATION : pending_difference_right) * acceleration_sign;
             }
 
             /* Prüfen ob der Timer weiterlaufen soll. */
-            return !speed_reached;
+            if (pending_difference_left > 0 || pending_difference_right > 0) {
+                /* Weiter beschleunigen */
+                return true;
+            } else {
+                /* Beschleunigung abgeschlossen. */
+                accelerate_timer_id = 0;
+
+                return false;
+            }
         });
     }
 
