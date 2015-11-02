@@ -30,7 +30,16 @@ public class THOMAS.MotorControl : SerialDevice {
     public enum Motor {
         LEFT = 2,
         RIGHT = 1,
-        BOTH = 3
+        BOTH = 3;
+
+        public static Motor from_number (int number) {
+            switch (number) {
+                case 2: return Motor.LEFT;
+                case 1: return Motor.RIGHT;
+                default:
+                case 3: return Motor.BOTH;
+            }
+        }
     }
 
     private uint accelerate_timer_id = 0;

@@ -43,6 +43,7 @@ vala_precompile (VALA_C
     Arduino.vala
     SerialDevice.vala
     MotorControl.vala
+    RemoteServer.vala
 PACKAGES
     gio-2.0
     gee-0.8

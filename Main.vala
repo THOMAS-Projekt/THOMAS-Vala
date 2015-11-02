@@ -20,8 +20,8 @@
 public class THOMAS.Main : Object {
     private static const OptionEntry[] OPTIONS = {
         { "debug", 'd', 0, OptionArg.NONE, ref debug_mode, "Aktiviert den Debugmodus", null },
-        { "arduino-tty", 'A', 0, OptionArg.STRING, ref arduino_tty, "Port des Arduinos", "PORT" },
-        { "motor-tty", 'M', 0, OptionArg.STRING, ref motor_tty, "Port der Motorsteuerung", "PORT" },
+        { "arduino-tty", 'A', 0, OptionArg.STRING, ref arduino_tty, "Port des Arduinos", "PORT/NONE" },
+        { "motor-tty", 'M', 0, OptionArg.STRING, ref motor_tty, "Port der Motorsteuerung", "PORT/NONE" },
         { "enable-minimalmode", 'm', 0, OptionArg.NONE, ref enable_minimalmode, "Aktiviert den Minimalmodus des Arduinos", null },
         { null }
     };
@@ -53,8 +53,9 @@ public class THOMAS.Main : Object {
 
     private Logger logger;
     private NetworkManager network_manager;
-    private Arduino arduino;
-    private MotorControl motor_control;
+    private Arduino? arduino = null;
+    private MotorControl? motor_control = null;
+    private RemoteServer remote_server;
 
     public Main () {
         main_loop = new MainLoop ();
@@ -70,17 +71,26 @@ public class THOMAS.Main : Object {
             network_manager = new NetworkManager ();
         }
 
-        debug ("Initialisiere Arduino...");
-        {
-            arduino = new Arduino (arduino_tty == null ? "/dev/ttyACM0" : arduino_tty, enable_minimalmode);
-            arduino.wait_for_initialisation ();
-            arduino.setup ();
+        if (arduino_tty == null || arduino_tty.down () != "none") {
+            debug ("Initialisiere Arduino...");
+            {
+                arduino = new Arduino (arduino_tty == null ? "/dev/ttyACM0" : arduino_tty, enable_minimalmode);
+                arduino.wait_for_initialisation ();
+                arduino.setup ();
+            }
         }
 
-        debug ("Initialisiere Motorsteuerung...");
+        if (motor_tty == null || motor_tty.down () != "none") {
+            debug ("Initialisiere Motorsteuerung...");
+            {
+                motor_control = new MotorControl (motor_tty == null ? "/dev/ttyS0" : motor_tty);
+                motor_control.setup ();
+            }
+        }
+
+        debug ("Initialisiere Steuerungsserver...");
         {
-            motor_control = new MotorControl (motor_tty == null ? "/dev/ttyS0" : motor_tty);
-            motor_control.setup ();
+            remote_server = new RemoteServer (motor_control, 4242);
         }
 
         debug ("Verknüpfe Ereignisse...");
@@ -95,9 +105,19 @@ public class THOMAS.Main : Object {
 
     private void connect_signals () {
         network_manager.ssid_changed.connect ((ssid) => {
+            if (arduino == null) {
+                return;
+            }
+
             arduino.update_ssid (ssid == null ? "Nicht verbunden" : ssid);
         });
 
-        network_manager.signal_strength_changed.connect (arduino.update_signal_strength);
+        network_manager.signal_strength_changed.connect ((signal_strength) => {
+            if (arduino == null) {
+                return;
+            }
+
+            arduino.update_signal_strength (signal_strength);
+        });
     }
 }
