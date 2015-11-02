@@ -54,6 +54,7 @@ public class THOMAS.MotorControl : SerialDevice {
 
         /* Ausgangsgeschwindigkeit */
         current_speed = { 0, 0 };
+        wanted_speed = { 0, 0 };
     }
 
     public void set_motor_speed (Motor motor, short speed) {
@@ -136,9 +137,9 @@ public class THOMAS.MotorControl : SerialDevice {
         }
 
         /* Drehrichtung senden */
-        base.send_package ({ 35, 35, 6, 5, (uint8)motor, (uint8)(speed >= 0) }, false);
+        base.send_package ({ 35, 35, 3, 5, (uint8)motor, (uint8)(speed >= 0) }, false);
 
         /* Geschwindigkeit senden */
-        base.send_package ({ 35, 35, 6, 2, (uint8)motor, (uint8)speed.abs () }, false);
+        base.send_package ({ 35, 35, 3, 2, (uint8)motor, (uint8)speed.abs () }, false);
     }
 }
