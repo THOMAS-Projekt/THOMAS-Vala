@@ -90,7 +90,7 @@ public class THOMAS.Main : Object {
 
         debug ("Initialisiere Steuerungsserver...");
         {
-            remote_server = new RemoteServer (motor_control, 4242);
+            remote_server = new RemoteServer (arduino, motor_control, 4242);
         }
 
         debug ("Verknüpfe Ereignisse...");

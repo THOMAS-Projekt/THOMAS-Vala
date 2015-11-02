@@ -19,11 +19,13 @@
 
 [DBus (name = "thomas.server")]
 public class THOMAS.RemoteServer : Object {
+    private Arduino? arduino = null;
     private MotorControl? motor_control = null;
 
     private DBusServer dbus_server;
 
-    public RemoteServer (MotorControl? motor_control, uint16 port) {
+    public RemoteServer (Arduino? arduino, MotorControl? motor_control, uint16 port) {
+        this.arduino = arduino;
         this.motor_control = motor_control;
 
         try {
@@ -61,6 +63,36 @@ public class THOMAS.RemoteServer : Object {
         }
 
         motor_control.set_motor_speed (MotorControl.Motor.from_number (motor), (short)speed);
+
+        return true;
+    }
+
+    public bool accelerate_to_motor_speed (int motor, int speed) {
+        if (motor_control == null) {
+            return false;
+        }
+
+        motor_control.accelerate_to_motor_speed (MotorControl.Motor.from_number (motor), (short)speed);
+
+        return true;
+    }
+
+    public bool set_cam_position (uint8 camera, uint8 angle) {
+        if (arduino == null) {
+            return false;
+        }
+
+        arduino.set_cam_position (camera, angle);
+
+        return true;
+    }
+
+    public bool change_cam_position (uint8 camera, uint8 degree) {
+        if (arduino == null) {
+            return false;
+        }
+
+        arduino.change_cam_position (camera, degree);
 
         return true;
     }
