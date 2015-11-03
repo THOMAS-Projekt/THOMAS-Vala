@@ -93,20 +93,24 @@ public abstract class THOMAS.SerialDevice : Object {
         }
     }
 
-    protected uint8[] read_package () {
-        uint8[] header = new uint8[1];
+    protected uint8[] read_package (bool receive_header = true, uint8 custom_package_length = 1) {
+        uint8 package_length = custom_package_length;
 
-        if (Posix.read (handle, header, 1) != 1) {
-            error ("Lesen des Paketheaders fehlgeschlagen.");
+        if (receive_header) {
+            uint8[] header = new uint8[1];
+
+            if (Posix.read (handle, header, 1) != 1) {
+                error ("Lesen des Paketheaders fehlgeschlagen.");
+            }
+
+            package_length = header[0];
         }
 
-        uint8 package_length = header[0];
-
         uint8[] package = {};
-
         uint8[] temp_buffer = new uint8[1];
 
         for (int i = 0; i < package_length; i++) {
+
             if (Posix.read (handle, temp_buffer, 1) != 1) {
                 error ("Fehler beim Lesen des Paketes");
             }

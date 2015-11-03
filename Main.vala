@@ -22,6 +22,7 @@ public class THOMAS.Main : Object {
         { "debug", 'd', 0, OptionArg.NONE, ref debug_mode, "Aktiviert den Debugmodus", null },
         { "arduino-tty", 'A', 0, OptionArg.STRING, ref arduino_tty, "Port des Arduinos", "PORT/NONE" },
         { "motor-tty", 'M', 0, OptionArg.STRING, ref motor_tty, "Port der Motorsteuerung", "PORT/NONE" },
+        { "relais-tty", 'R', 0, OptionArg.STRING, ref relais_tty, "Port der Relaiskarte", "PORT/NONE" },
         { "enable-minimalmode", 'm', 0, OptionArg.NONE, ref enable_minimalmode, "Aktiviert den Minimalmodus des Arduinos", null },
         { null }
     };
@@ -29,6 +30,7 @@ public class THOMAS.Main : Object {
     private static bool debug_mode = false;
     private static string? arduino_tty = null;
     private static string? motor_tty = null;
+    private static string? relais_tty = null;
     private static bool enable_minimalmode = false;
 
     public static void main (string[] args) {
@@ -55,6 +57,7 @@ public class THOMAS.Main : Object {
     private NetworkManager network_manager;
     private Arduino? arduino = null;
     private MotorControl? motor_control = null;
+    private Relais? relais = null;
     private RemoteServer remote_server;
 
     public Main () {
@@ -85,6 +88,15 @@ public class THOMAS.Main : Object {
             {
                 motor_control = new MotorControl (motor_tty == null ? "/dev/ttyS0" : motor_tty);
                 motor_control.setup ();
+            }
+        }
+
+        if (relais_tty == null || relais_tty.down () != "none") {
+            debug ("Initialisiere Relaiskarte...");
+            {
+                relais = new Relais (relais_tty == null ? "/dev/ttyS1" : relais_tty);
+                relais.setup ();
+
             }
         }
 
