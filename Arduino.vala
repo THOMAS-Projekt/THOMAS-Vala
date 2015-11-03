@@ -31,10 +31,6 @@ public class THOMAS.Arduino : SerialDevice {
     public Arduino (string tty_name, bool minimalmode_enabled) {
         base (tty_name, BAUDRATE);
         base.attach ((termios) => {
-            /* Baudrate setzen */
-            termios.c_ispeed = baudrate;
-            termios.c_ospeed = baudrate;
-
             /* Programm soll auf Antwort des Arduinos warten */
             termios.c_cc[Posix.VMIN] = 1;
             termios.c_cc[Posix.VTIME] = 1;

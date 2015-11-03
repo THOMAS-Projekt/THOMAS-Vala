@@ -53,11 +53,7 @@ public class THOMAS.MotorControl : SerialDevice {
     public MotorControl (string tty_name) {
         base (tty_name, BAUDRATE);
         base.attach ((termios) => {
-            /* Baudrate setzen */
-            termios.c_ispeed = BAUDRATE;
-            termios.c_ospeed = BAUDRATE;
-
-            /* Neue Konfiguration zurückgeben */
+            /* Konfiguration unverändert zurückgeben */
             return termios;
         });
 

@@ -48,6 +48,10 @@ public abstract class THOMAS.SerialDevice : Object {
             error ("Lesen von TTY-Attributen fehlgeschlagen.");
         }
 
+        /* Baudrate setzen */
+        Posix.cfsetispeed (ref termios, baudrate);
+        Posix.cfsetospeed (ref termios, baudrate);
+
         /* Der übergeordneten Klasse die Möglichkeit zum Anpassen der Konfiguration geben */
         termios = configuration_handler (termios);
 

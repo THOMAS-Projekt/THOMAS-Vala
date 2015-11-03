@@ -23,13 +23,9 @@ public class THOMAS.Relais : SerialDevice {
     public Relais (string tty_name) {
         base (tty_name, BAUDRATE);
         base.attach ((termios) => {
-            /* Baudrate setzen */
-            termios.c_ispeed = baudrate;
-            termios.c_ospeed = baudrate;
-
             /* Programm soll auf Antwort des Relais warten */
             termios.c_cc[Posix.VMIN] = 0;
-            termios.c_cc[Posix.VTIME] = 10;
+            termios.c_cc[Posix.VTIME] = 1;
 
             /* Schnittstelle konfigurieren */
             termios.c_cflag |= Posix.CS8;
@@ -56,7 +52,7 @@ public class THOMAS.Relais : SerialDevice {
     }
 
     public void set_relay (int port, bool state) {
-        uint8 val = -1;
+        uint8 val = 0;
         uint8 rval = 0;
 
         if (state) {
