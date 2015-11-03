@@ -51,6 +51,9 @@ public abstract class THOMAS.SerialDevice : Object {
         /* Der übergeordneten Klasse die Möglichkeit zum Anpassen der Konfiguration geben */
         termios = configuration_handler (termios);
 
+        /* Streams leeren */
+        Posix.tcflush (handle, Posix.TCIOFLUSH)
+
         /* Neue Konfiguration übernehmen */
         if (Posix.tcsetattr (handle, Posix.TCSAFLUSH, termios) != 0) {
             error ("Setzen von TTY-Attributen fehlgeschlagen.");
@@ -93,7 +96,7 @@ public abstract class THOMAS.SerialDevice : Object {
         }
     }
 
-    protected uint8[] read_package (bool receive_header = true, uint8 custom_package_length = 1) {
+    protected uint8[] read_package (bool receive_header = true, uint8 custom_package_length = 1, bool split = true) {
         uint8 package_length = custom_package_length;
 
         if (receive_header) {
@@ -107,15 +110,21 @@ public abstract class THOMAS.SerialDevice : Object {
         }
 
         uint8[] package = {};
-        uint8[] temp_buffer = new uint8[1];
 
-        for (int i = 0; i < package_length; i++) {
+        if (split) {
+            uint8[] temp_buffer = new uint8[1];
 
-            if (Posix.read (handle, temp_buffer, 1) != 1) {
+            for (int i = 0; i < package_length; i++) {
+                if (Posix.read (handle, temp_buffer, 1) != 1) {
+                    error ("Fehler beim Lesen des Paketes");
+                }
+
+                package += temp_buffer[0];
+            }
+        } else {
+            if (Posix.read (handle, package, package_length) != 1) {
                 error ("Fehler beim Lesen des Paketes");
             }
-
-            package += temp_buffer[0];
         }
 
         return package;

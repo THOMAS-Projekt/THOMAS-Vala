@@ -18,7 +18,7 @@
  */
 
 public class THOMAS.Arduino : SerialDevice {
-    private static const uint BAUDRATE = 9600;
+    private static const uint BAUDRATE = Posix.B9600;
 
     public enum MessagePriority {
         INFO,

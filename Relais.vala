@@ -51,7 +51,8 @@ public class THOMAS.Relais : SerialDevice {
         if (!send_with_checksum ({ 1, 1, 0 })) {
             warning ("Die Relaiskarte wurde möglicherweise nicht korrekt initialisiert.");
         }
-        debug("Die Relaiskarte wurde erfolgreich initialisiert");
+
+        debug ("Die Relaiskarte wurde erfolgreich initialisiert");
     }
 
     public void set_relay (int port, bool state) {
@@ -78,17 +79,19 @@ public class THOMAS.Relais : SerialDevice {
     }
 
     private bool send_with_checksum (uint8[] data) {
-    /* Bitte schön machen!! */
+        /* Bitte schön machen!! */
         Thread.usleep (50 * 1000);
 
-        /* Relay initlaisieren */
+        /* Befehl senden */
         base.send_package ({ data[0], data[1], data[2], data[0] ^ data[1] ^ data[2] }, false);
 
         /* Bitte schön machen!! */
         Thread.usleep (50 * 1000);
 
-        uint8[] receive = base.read_package (false, 4);
+        /* Antwort empfangen */
+        uint8[] receive = base.read_package (false, 4, false);
 
+        /* Antwort überprüen */
         return ((receive[0] ^ receive[1] ^ receive[2]) == receive[3]);
     }
 }

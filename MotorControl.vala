@@ -18,7 +18,7 @@
  */
 
 public class THOMAS.MotorControl : SerialDevice {
-    private static const uint BAUDRATE = 9600;
+    private static const uint BAUDRATE = Posix.B9600;
 
     /* Definiert die maximale Geschwindigkeitsänderung pro 100ms. */
     private static const short MAX_ACCELERATION = 15;
