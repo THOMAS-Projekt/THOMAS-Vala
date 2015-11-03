@@ -52,7 +52,7 @@ public abstract class THOMAS.SerialDevice : Object {
         termios = configuration_handler (termios);
 
         /* Streams leeren */
-        Posix.tcflush (handle, Posix.TCIOFLUSH)
+        Posix.tcflush (handle, Posix.TCIOFLUSH);
 
         /* Neue Konfiguration übernehmen */
         if (Posix.tcsetattr (handle, Posix.TCSAFLUSH, termios) != 0) {
