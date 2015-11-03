@@ -75,19 +75,15 @@ public class THOMAS.Relais : SerialDevice {
     }
 
     private bool send_with_checksum (uint8[] data) {
-        /* Bitte schön machen!! */
-        Thread.usleep (50 * 1000);
-
         /* Befehl senden */
         base.send_package ({ data[0], data[1], data[2], data[0] ^ data[1] ^ data[2] }, false);
 
-        /* Bitte schön machen!! */
-        Thread.usleep (50 * 1000);
+        /*
+         * FIXME: Überprüfung der Antwort liefert unschlüssige oder garkeine Werte, Relais schalten dennoch.
+         * uint8[] receive = base.read_package (false, 4, false);
+         * return ((receive[0] ^ receive[1] ^ receive[2]) == receive[3]);
+         */
 
-        /* Antwort empfangen */
-        uint8[] receive = base.read_package (false, 4, false);
-
-        /* Antwort überprüen */
-        return ((receive[0] ^ receive[1] ^ receive[2]) == receive[3]);
+        return true;
     }
 }
