@@ -23,6 +23,7 @@ public class THOMAS.Main : Object {
         { "arduino-tty", 'A', 0, OptionArg.STRING, ref arduino_tty, "Port des Arduinos", "PORT/NONE" },
         { "motor-tty", 'M', 0, OptionArg.STRING, ref motor_tty, "Port der Motorsteuerung", "PORT/NONE" },
         { "relais-tty", 'R', 0, OptionArg.STRING, ref relais_tty, "Port der Relaiskarte", "PORT/NONE" },
+        { "camera", 'C', 0, OptionArg.INT, ref camera_id, "ID der Kamera", "ID/-1" },
         { "enable-minimalmode", 'm', 0, OptionArg.NONE, ref enable_minimalmode, "Aktiviert den Minimalmodus des Arduinos", null },
         { null }
     };
@@ -31,6 +32,7 @@ public class THOMAS.Main : Object {
     private static string? arduino_tty = null;
     private static string? motor_tty = null;
     private static string? relais_tty = null;
+    private static int camera_id = 0;
     private static bool enable_minimalmode = false;
 
     public static void main (string[] args) {
@@ -58,6 +60,7 @@ public class THOMAS.Main : Object {
     private Arduino? arduino = null;
     private MotorControl? motor_control = null;
     private Relais? relais = null;
+    private UDPStreamer? udp_streamer = null;
     private RemoteServer remote_server;
 
     public Main () {
@@ -97,6 +100,14 @@ public class THOMAS.Main : Object {
                 relais = new Relais (relais_tty == null ? "/dev/ttyS1" : relais_tty);
                 relais.setup ();
                 relais.set_all (false);
+            }
+        }
+
+        if (camera_id >= 0) {
+            debug ("Initialisiere Kamera...");
+            {
+                udp_streamer = new UDPStreamer (camera_id == -1 ? 0 : camera_id);
+                udp_streamer.setup ();
             }
         }
 
