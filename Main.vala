@@ -141,5 +141,28 @@ public class THOMAS.Main : Object {
 
             arduino.update_signal_strength (signal_strength);
         });
+
+        /* Consolenhandler */
+        Idle.add (() => {
+            string? line = stdin.read_line ();
+
+            if (line == null || line.strip () == "") {
+                return true;
+            }
+
+            switch (line.split (" ")[0].down ()) {
+                case "exit" :
+                case "stop" :
+                    main_loop.quit ();
+
+                    return false;
+                default :
+                    warning ("Unbekannter Befehl.");
+
+                    break;
+            }
+
+            return true;
+        });
     }
 }
