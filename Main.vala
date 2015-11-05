@@ -97,9 +97,8 @@ public class THOMAS.Main : Object {
         if (relais_tty == null || relais_tty.down () != "none") {
             debug ("Initialisiere Relaiskarte...");
             {
-                relais = new Relais (relais_tty == null ? "/dev/ttyS1" : relais_tty);
+                relais = new Relais (relais_tty == null ? "/dev/ttyUSB0" : relais_tty);
                 relais.setup ();
-                relais.set_all (false);
             }
         }
 
