@@ -99,6 +99,7 @@ public class THOMAS.Main : Object {
             {
                 relais = new Relais (relais_tty == null ? "/dev/ttyUSB0" : relais_tty);
                 relais.setup ();
+                relais.set_all (false);
             }
         }
 

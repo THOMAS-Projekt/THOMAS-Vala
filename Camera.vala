@@ -35,11 +35,9 @@ public class THOMAS.Camera : Object {
     }
 
     public void start () {
-        if (access_counter > 0) {
+        if (access_counter++ > 0) {
             return;
         }
-
-        access_counter = 1;
 
         new Thread<int> (null, () => {
             while (access_counter > 0) {

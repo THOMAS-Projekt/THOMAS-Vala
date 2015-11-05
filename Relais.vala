@@ -48,10 +48,6 @@ public class THOMAS.Relais : SerialDevice {
             warning ("Die Relaiskarte wurde möglicherweise nicht korrekt initialisiert.");
         }
 
-        // Den Status eines beliebiegen Ports ändern. Workaround: Erstes Änderung wird nicht übernommen
-        set_relay(6, true);
-        set_relay(6, false);
-        
         debug ("Die Relaiskarte wurde erfolgreich initialisiert");
     }
 
