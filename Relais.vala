@@ -28,10 +28,10 @@ public class THOMAS.Relais : SerialDevice {
             termios.c_cc[Posix.VTIME] = 1;
 
             /* Schnittstelle konfigurieren */
-            termios.c_cflag |= Posix.CS8;
             termios.c_cflag &= ~Posix.PARENB; /* kein Partybit */
             termios.c_cflag &= ~Posix.CSTOPB; /* 1 Stopbit */
             termios.c_cflag &= ~Posix.CSIZE; /* 8 Datenbits */
+            termios.c_cflag |= Posix.CS8;
             termios.c_cflag |= (Posix.CLOCAL | Posix.CREAD);
 
             termios.c_lflag &= ~(Posix.ICANON | Posix.ECHO | Posix.ECHOE | Posix.ISIG);
