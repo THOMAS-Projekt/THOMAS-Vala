@@ -18,22 +18,84 @@
  */
 
 public class THOMAS.UDPStreamer : Object {
-    private OpenCV.Capture camera;
+    private static const uint32 MAX_PACKAGE_SIZE = 64000;
 
-    public UDPStreamer (int camera_id) {
-        camera = new OpenCV.Capture.from_camera (camera_id);
-        camera.set_property (OpenCV.Capture.Property.FRAME_WIDTH, 1280);
-        camera.set_property (OpenCV.Capture.Property.FRAME_HEIGHT, 720);
+    public Camera camera { private get; construct; }
+
+    private string hostname;
+    private uint16 port;
+
+    /* Streamkonfiguration mit Prozentwerten */
+    public int image_quality { get; set; default = 70; }
+    public int image_density { get; set; default = 100; }
+
+    private SocketClient client;
+
+    /*
+     * Erstellt einen neuen UDP-Streamer zum Senden des Kamerastreams an ein Anzeigeprogramm.
+     * Die Existenz einer Kameraverbindung sollte vorm Instanzieren überprüft werden.
+     */
+    public UDPStreamer (Camera camera, string hostname, uint16 port) {
+        Object (camera: camera);
+
+        this.hostname = hostname;
+        this.port = port;
+
+        client = new SocketClient ();
+        client.protocol = SocketProtocol.UDP;
     }
 
     public void setup () {
-        OpenCV.Window.create_named ("bla");
+        OutputStream output_stream;
 
-        new Thread<int> (null, () => {
-            while (true) {
-                unowned OpenCV.IPL.Image frame = camera.query_frame ();
-                OpenCV.Window.show_image ("bla", frame);
+        try {
+            debug ("Verbinde zu %s:%u...", hostname, port);
+
+            SocketConnection connection = client.connect_to_host (hostname, port);
+            output_stream = connection.output_stream;
+        } catch (Error e) {
+            warning ("Verbindung fehlgeschlagen: %s", e.message);
+
+            return;
+        }
+
+        debug ("Verbindung hergestellt, Übertragung wird gestartet...");
+
+        camera.frame_captured.connect ((frame) => {
+            try {
+                uint8[] frame_data;
+
+                /* Frame kodieren und in Byte-Array konvertieren */
+                if (!frame.save_to_buffer (out frame_data, "jpeg",
+                                           "quality", image_quality,
+                                           "x-dpi", image_density,
+                                           "y-dpi", image_density)) {
+                    warning ("Konvertieren und Exportieren des Kamera-Frames fehlgeschlagen.");
+
+                    return;
+                }
+
+                uint32 bytes_sent = 0;
+
+                while (bytes_sent < frame_data.length) {
+                    /* Größe des Nächsten Paketes bestimmen */
+                    uint32 next_size = frame_data.length - bytes_sent;
+
+                    /* Zu große Pakete kürzen */
+                    if (next_size > MAX_PACKAGE_SIZE) {
+                        next_size = MAX_PACKAGE_SIZE;
+                    }
+
+                    /* Ausschnitt aus Daten-Array wählen und in den Stream schreiben */
+                    if (output_stream.write (frame_data[bytes_sent: (bytes_sent + next_size)]) != next_size) {
+                        warning ("Fehler beim Senden eines UDP-Paketes.");
+                    }
+                }
+            } catch (Error e) {
+                warning ("Senden des Frames fehlgeschlagen: %s", e.message);
             }
         });
+
+        camera.start ();
     }
 }

@@ -594,6 +594,7 @@ namespace OpenCV {
 
             public OpenCV.Type type;
             public int dims;
+
             /*
              * public struct CvSet* heap;
              * public void** hashtable;
@@ -1098,6 +1099,9 @@ namespace OpenCV {
     [CCode (cname = "cvWaitKey")]
     public static void wait_key (int delay = 0);
 
+    [CCode (cname = "cvEncodeImage")]
+    public static Matrix encode_image (string format_extension, Array image, int params = 0);
+
     [CCode (cheader_filename = "cvaux.h")]
     namespace Eigen {
         [CCode (cname = "cvCalcCovarMatrixEx")]
@@ -1170,6 +1174,7 @@ namespace OpenCV {
             public Image mask_roi;
             [CCode (cname = "imageId")]
             public void* image_id;
+
             /*
              * [CCode (cname = "tileInfo")]
              * public TileInfo tile_info;
@@ -1182,6 +1187,7 @@ namespace OpenCV {
             public int border_mode[4];
             [CCode (cname = "BorderConst")]
             public int border_const[4];
+
             /*
              * [CCode (cname = "imageDataOrigin")]
              * public? image_data_origin;

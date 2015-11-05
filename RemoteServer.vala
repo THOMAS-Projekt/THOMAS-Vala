@@ -21,12 +21,17 @@
 public class THOMAS.RemoteServer : Object {
     private Arduino? arduino = null;
     private MotorControl? motor_control = null;
+    private Camera? camera = null;
 
     private DBusServer dbus_server;
 
-    public RemoteServer (Arduino? arduino, MotorControl? motor_control, uint16 port) {
+    /* Wird verwendet um Kamera-Streamern eindeutige IDs zuzuweisen. */
+    private int streamer_ids = 0;
+
+    public RemoteServer (Arduino? arduino, MotorControl? motor_control, Camera? camera, uint16 port) {
         this.arduino = arduino;
         this.motor_control = motor_control;
+        this.camera = camera;
 
         try {
             dbus_server = new DBusServer.sync ("tcp:host=0.0.0.0,port=%u".printf (port),
@@ -95,5 +100,16 @@ public class THOMAS.RemoteServer : Object {
         arduino.change_cam_position (camera, degree);
 
         return true;
+    }
+
+    public int start_camera_stream (string viewer_host, uint16 viewer_port) {
+        if (camera == null) {
+            return -1;
+        }
+
+        UDPStreamer streamer = new UDPStreamer (camera, viewer_host, viewer_port);
+        streamer.setup ();
+
+        return streamer_ids++;
     }
 }

@@ -60,7 +60,7 @@ public class THOMAS.Main : Object {
     private Arduino? arduino = null;
     private MotorControl? motor_control = null;
     private Relais? relais = null;
-    private UDPStreamer? udp_streamer = null;
+    private Camera? camera = null;
     private RemoteServer remote_server;
 
     public Main () {
@@ -106,14 +106,13 @@ public class THOMAS.Main : Object {
         if (camera_id >= 0) {
             debug ("Initialisiere Kamera...");
             {
-                udp_streamer = new UDPStreamer (camera_id == -1 ? 0 : camera_id);
-                udp_streamer.setup ();
+                camera = new Camera (camera_id == -1 ? 0 : camera_id);
             }
         }
 
         debug ("Initialisiere Steuerungsserver...");
         {
-            remote_server = new RemoteServer (arduino, motor_control, 4242);
+            remote_server = new RemoteServer (arduino, motor_control, camera, 4242);
         }
 
         debug ("Verknüpfe Ereignisse...");
