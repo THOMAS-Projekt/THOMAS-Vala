@@ -62,7 +62,7 @@ public class THOMAS.RemoteServer : Object {
         }
     }
 
-    public bool set_motor_speed (int motor, int speed) {
+    public bool set_motor_speed (uint8 motor, int speed) {
         if (motor_control == null) {
             return false;
         }
@@ -72,7 +72,7 @@ public class THOMAS.RemoteServer : Object {
         return true;
     }
 
-    public bool accelerate_to_motor_speed (int motor, int speed) {
+    public bool accelerate_to_motor_speed (uint8 motor, int speed) {
         if (motor_control == null) {
             return false;
         }
