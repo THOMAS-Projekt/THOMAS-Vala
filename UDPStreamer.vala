@@ -43,6 +43,7 @@ public class THOMAS.UDPStreamer : Object {
 
         client = new SocketClient ();
         client.protocol = SocketProtocol.UDP;
+        client.type = SocketType.DATAGRAM;
     }
 
     public void setup () {
@@ -65,11 +66,13 @@ public class THOMAS.UDPStreamer : Object {
             try {
                 uint8[] frame_data;
 
+                /* TODO: Framegröße anhand der angefragten Auflösung prozentual verkleinern */
+
                 /* Frame kodieren und in Byte-Array konvertieren */
-                if (!frame.save_to_buffer (out frame_data, "jpeg",
-                                           "quality", image_quality,
-                                           "x-dpi", image_density,
-                                           "y-dpi", image_density)) {
+                if (!frame.save_to_buffer (out frame_data,
+                                           "jpeg",
+                                           "quality",
+                                           image_quality.to_string ())) {
                     warning ("Konvertieren und Exportieren des Kamera-Frames fehlgeschlagen.");
 
                     return;
