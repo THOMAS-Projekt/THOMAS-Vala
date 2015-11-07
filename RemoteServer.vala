@@ -35,7 +35,7 @@ public class THOMAS.RemoteServer : Object {
 
         try {
             dbus_server = new DBusServer.sync ("tcp:host=0.0.0.0,port=%u".printf (port),
-                                               DBusServerFlags.RUN_IN_THREAD | DBusServerFlags.AUTHENTICATION_ALLOW_ANONYMOUS,
+                                               DBusServerFlags.AUTHENTICATION_ALLOW_ANONYMOUS,
                                                GLib.DBus.generate_guid (),
                                                null,
                                                null);
