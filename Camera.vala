@@ -57,14 +57,20 @@ public class THOMAS.Camera : Object {
     }
 
     private void query_frame () {
+        /* Frame aufnehmen */
         unowned OpenCV.IPL.Image raw_frame = capture.query_frame ();
+
+        /* Bild in RGB-Farbraum konvertieren */
+        raw_frame.convert_color (raw_frame, 4);
+
+        /* Bild in Gdk.Pixbuf konvertieren. */
         Gdk.Pixbuf frame = new Gdk.Pixbuf.from_data (raw_frame.image_data,
                                                      Gdk.Colorspace.RGB,
                                                      false,
-                                                     8,
+                                                     raw_frame.depth,
                                                      raw_frame.width,
                                                      raw_frame.height,
-                                                     raw_frame.width);
+                                                     raw_frame.width_step);
 
         frame_captured (frame);
     }

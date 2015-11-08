@@ -30,6 +30,7 @@ public class THOMAS.UDPStreamer : Object {
     public int image_density { get; set; default = 100; }
 
     private SocketClient client;
+    private SocketConnection connection;
 
     /*
      * Erstellt einen neuen UDP-Streamer zum Senden des Kamerastreams an ein Anzeigeprogramm.
@@ -52,7 +53,7 @@ public class THOMAS.UDPStreamer : Object {
         try {
             debug ("Verbinde zu %s:%u...", hostname, port);
 
-            SocketConnection connection = client.connect_to_host (hostname, port);
+            connection = client.connect_to_host (hostname, port);
             output_stream = connection.output_stream;
         } catch (Error e) {
             warning ("Verbindung fehlgeschlagen: %s", e.message);
@@ -92,7 +93,11 @@ public class THOMAS.UDPStreamer : Object {
                     /* Ausschnitt aus Daten-Array wählen und in den Stream schreiben */
                     if (output_stream.write (frame_data[bytes_sent: (bytes_sent + next_size)]) != next_size) {
                         warning ("Fehler beim Senden eines UDP-Paketes.");
+
+                        break;
                     }
+
+                    bytes_sent += next_size;
                 }
             } catch (Error e) {
                 warning ("Senden des Frames fehlgeschlagen: %s", e.message);

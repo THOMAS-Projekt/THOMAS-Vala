@@ -227,6 +227,9 @@ namespace OpenCV {
 
         [CCode (cname = "cvConvert")]
         public void convert (OpenCV.Array dst);
+
+        [CCode (cname = "cvCvtColor")]
+        public void convert_color (OpenCV.Array dst, int code);
     }
 
     [SimpleType, CCode (cname = "CvBox2D", has_type_id = false)]
