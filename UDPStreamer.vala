@@ -70,14 +70,12 @@ public class THOMAS.UDPStreamer : Object {
 
     public void start () {
         camera.frame_captured.connect (send_frame);
-        camera.start ();
 
         debug ("Bildübertragung gestartet.");
     }
 
     public void stop () {
         camera.frame_captured.disconnect (send_frame);
-        camera.stop ();
 
         debug ("Bildübertragung gestoppt.");
     }
@@ -86,13 +84,16 @@ public class THOMAS.UDPStreamer : Object {
         try {
             uint8[] frame_data;
 
-            /* TODO: Framegröße anhand der angefragten Auflösung prozentual verkleinern */
+            /* Framegröße anhand der angefragten Auflösung prozentual verkleinern */
+            Gdk.Pixbuf scaled_frame = frame.scale_simple ((int)(frame.width * ((double)image_density * 0.007 + 0.3)),
+                                                          (int)(frame.height * ((double)image_density * 0.007 + 0.3)),
+                                                          Gdk.InterpType.NEAREST);
 
             /* Frame kodieren und in Byte-Array konvertieren */
-            if (!frame.save_to_buffer (out frame_data,
-                                       "jpeg",
-                                       "quality",
-                                       image_quality.to_string ())) {
+            if (!scaled_frame.save_to_buffer (out frame_data,
+                                              "jpeg",
+                                              "quality",
+                                              ((double)image_quality * 0.9 + 10).to_string ())) {
                 warning ("Konvertieren und Exportieren des Kamera-Frames fehlgeschlagen.");
 
                 return;

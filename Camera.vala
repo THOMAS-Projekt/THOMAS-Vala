@@ -40,6 +40,10 @@ public class THOMAS.Camera : Object {
     }
 
     public void start () {
+        if (access_counter < 0) {
+            access_counter = 0;
+        }
+
         if (access_counter++ > 0) {
             return;
         }
@@ -58,7 +62,9 @@ public class THOMAS.Camera : Object {
     }
 
     public void stop () {
-        access_counter--;
+        if (access_counter-- <= 0) {
+            access_counter = 0;
+        }
     }
 
     private void query_frame () {

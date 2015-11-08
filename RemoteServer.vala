@@ -125,6 +125,8 @@ public class THOMAS.RemoteServer : Object {
         streamer.setup ();
         streamer.start ();
 
+        camera.start ();
+
         streamers.@set (streamer_id, streamer);
 
         return streamer_id;
@@ -136,6 +138,22 @@ public class THOMAS.RemoteServer : Object {
         }
 
         streamers.unset (streamer_id);
+
+        camera.stop ();
+
+        return true;
+    }
+
+    public bool set_camera_stream_options (int streamer_id, int image_quality, int image_density) {
+        if (camera == null) {
+            return false;
+        }
+
+        if (streamers.has_key (streamer_id)) {
+            UDPStreamer streamer = streamers.@get (streamer_id);
+            streamer.image_quality = image_quality > 100 ? 100 : image_quality < 0 ? 0 : image_quality;
+            streamer.image_density = image_density > 100 ? 100 : image_density < 0 ? 0 : image_density;
+        }
 
         return true;
     }
