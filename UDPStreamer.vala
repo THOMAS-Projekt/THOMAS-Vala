@@ -31,6 +31,7 @@ public class THOMAS.UDPStreamer : Object {
 
     private SocketClient client;
     private SocketConnection connection;
+    private OutputStream output_stream;
 
     /*
      * Erstellt einen neuen UDP-Streamer zum Senden des Kamerastreams an ein Anzeigeprogramm.
@@ -47,9 +48,12 @@ public class THOMAS.UDPStreamer : Object {
         client.type = SocketType.DATAGRAM;
     }
 
-    public void setup () {
-        OutputStream output_stream;
+    ~UDPStreamer () {
+        /* Übertragung stoppen. */
+        stop ();
+    }
 
+    public void setup () {
         try {
             debug ("Verbinde zu %s:%u...", hostname, port);
 
@@ -61,47 +65,68 @@ public class THOMAS.UDPStreamer : Object {
             return;
         }
 
-        debug ("Verbindung hergestellt, Übertragung wird gestartet...");
+        debug ("Verbindung hergestellt.");
+    }
 
-        camera.frame_captured.connect ((frame) => {
-            try {
-                uint8[] frame_data;
+    public void start () {
+        camera.frame_captured.connect (send_frame);
+        camera.start ();
 
-                /* TODO: Framegröße anhand der angefragten Auflösung prozentual verkleinern */
+        debug ("Bildübertragung gestartet.");
+    }
 
-                /* Frame kodieren und in Byte-Array konvertieren */
-                if (!frame.save_to_buffer (out frame_data,
-                                           "jpeg",
-                                           "quality",
-                                           image_quality.to_string ())) {
-                    warning ("Konvertieren und Exportieren des Kamera-Frames fehlgeschlagen.");
+    public void stop () {
+        camera.frame_captured.disconnect (send_frame);
+        camera.stop ();
 
-                    return;
-                }
+        debug ("Bildübertragung gestoppt.");
+    }
 
-                uint32 bytes_sent = 0;
+    private void send_frame (Gdk.Pixbuf frame) {
+        try {
+            uint8[] frame_data;
 
-                while (bytes_sent < frame_data.length) {
-                    /* Größe des Nächsten Paketes bestimmen */
-                    uint32 next_size = frame_data.length - bytes_sent;
+            /* TODO: Framegröße anhand der angefragten Auflösung prozentual verkleinern */
 
-                    /* Zu große Pakete kürzen */
-                    if (next_size > MAX_PACKAGE_SIZE) {
-                        next_size = MAX_PACKAGE_SIZE;
-                    }
+            /* Frame kodieren und in Byte-Array konvertieren */
+            if (!frame.save_to_buffer (out frame_data,
+                                       "jpeg",
+                                       "quality",
+                                       image_quality.to_string ())) {
+                warning ("Konvertieren und Exportieren des Kamera-Frames fehlgeschlagen.");
 
-                    /* Ausschnitt aus Daten-Array wählen und in den Stream schreiben */
-                    if (output_stream.write (frame_data[bytes_sent: (bytes_sent + next_size)]) != next_size) {
-                        warning ("Fehler beim Senden eines UDP-Paketes.");
-
-                        break;
-                    }
-
-                    bytes_sent += next_size;
-                }
-            } catch (Error e) {
-                warning ("Senden des Frames fehlgeschlagen: %s", e.message);
+                return;
             }
-        });
+
+            uint32 bytes_sent = 0;
+
+            while (bytes_sent < frame_data.length) {
+                /* Größe des Nächsten Paketes bestimmen */
+                uint32 next_size = frame_data.length - bytes_sent;
+
+                /* Zu große Pakete kürzen */
+                if (next_size > MAX_PACKAGE_SIZE) {
+                    next_size = MAX_PACKAGE_SIZE;
+                }
+
+                /* Ausschnitt aus Daten-Array wählen und in den Stream schreiben */
+                if (output_stream.write (frame_data[bytes_sent: (bytes_sent + next_size)]) != next_size) {
+                    warning ("Fehler beim Senden eines UDP-Paketes.");
+
+                    break;
+                }
+
+                bytes_sent += next_size;
+            }
+        } catch (Error e) {
+            warning ("Senden des Frames fehlgeschlagen: %s", e.message);
+
+            /*
+             * Übertragung stoppen
+             * TODO: Falls die Exception auch bei Verbindungsunterbrechungen eintritt, diesen Aufruf löschen.
+             */
+            stop ();
+            camera.stop ();
+        }
     }
 }

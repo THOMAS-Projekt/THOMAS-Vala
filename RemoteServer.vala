@@ -23,7 +23,7 @@ public class THOMAS.RemoteServer : Object {
     private MotorControl? motor_control = null;
     private Camera? camera = null;
 
-    private DBusServer dbus_server;
+    private DBusServer? dbus_server = null;
 
     /* Wird verwendet um Kamera-Streamern eindeutige IDs zuzuweisen. */
     private int streamer_ids = 0;
@@ -64,6 +64,13 @@ public class THOMAS.RemoteServer : Object {
             debug ("Steuerungsserver gestartet: %s", dbus_server.get_client_address ());
         } catch (Error e) {
             warning ("Steuerungsserver konnte nicht gestartet werden: %s", e.message);
+        }
+    }
+
+    ~RemoteServer () {
+        if (dbus_server != null) {
+            dbus_server.stop ();
+            debug ("Steuerungsserver gestoppt.");
         }
     }
 
@@ -116,10 +123,9 @@ public class THOMAS.RemoteServer : Object {
 
         UDPStreamer streamer = new UDPStreamer (camera, viewer_host, viewer_port);
         streamer.setup ();
+        streamer.start ();
 
         streamers.@set (streamer_id, streamer);
-
-        camera.start ();
 
         return streamer_id;
     }
@@ -130,8 +136,6 @@ public class THOMAS.RemoteServer : Object {
         }
 
         streamers.unset (streamer_id);
-
-        camera.stop ();
 
         return true;
     }

@@ -34,6 +34,11 @@ public class THOMAS.Camera : Object {
         capture.set_property (OpenCV.Capture.Property.FRAME_HEIGHT, CAMERA_FRAME_HEIGHT);
     }
 
+    ~Camera () {
+        access_counter = 0;
+        debug ("Bildaufnahme gestoppt.");
+    }
+
     public void start () {
         if (access_counter++ > 0) {
             return;
