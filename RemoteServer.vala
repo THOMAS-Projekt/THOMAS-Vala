@@ -28,10 +28,15 @@ public class THOMAS.RemoteServer : Object {
     /* Wird verwendet um Kamera-Streamern eindeutige IDs zuzuweisen. */
     private int streamer_ids = 0;
 
+    /* Liste der laufenden Kamerastreams */
+    private Gee.HashMap<int, UDPStreamer> streamers;
+
     public RemoteServer (Arduino? arduino, MotorControl? motor_control, Camera? camera, uint16 port) {
         this.arduino = arduino;
         this.motor_control = motor_control;
         this.camera = camera;
+
+        streamers = new Gee.HashMap<int, UDPStreamer> ();
 
         try {
             dbus_server = new DBusServer.sync ("tcp:host=0.0.0.0,port=%u".printf (port),
@@ -107,9 +112,27 @@ public class THOMAS.RemoteServer : Object {
             return -1;
         }
 
+        int streamer_id = streamer_ids++;
+
         UDPStreamer streamer = new UDPStreamer (camera, viewer_host, viewer_port);
         streamer.setup ();
 
-        return streamer_ids++;
+        streamers.@set (streamer_id, streamer);
+
+        camera.start ();
+
+        return streamer_id;
+    }
+
+    public bool stop_camera_stream (int streamer_id) {
+        if (camera == null) {
+            return false;
+        }
+
+        streamers.unset (streamer_id);
+
+        camera.stop ();
+
+        return true;
     }
 }

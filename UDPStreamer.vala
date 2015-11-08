@@ -103,7 +103,5 @@ public class THOMAS.UDPStreamer : Object {
                 warning ("Senden des Frames fehlgeschlagen: %s", e.message);
             }
         });
-
-        camera.start ();
     }
 }
