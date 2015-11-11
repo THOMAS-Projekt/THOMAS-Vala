@@ -31,14 +31,14 @@ public class THOMAS.UDPStreamer : Object {
 
     private SocketClient client;
     private SocketConnection connection;
-    private OutputStream output_stream;
+    private OutputStream? output_stream = null;
 
     /*
      * Erstellt einen neuen UDP-Streamer zum Senden des Kamerastreams an ein Anzeigeprogramm.
      * Die Existenz einer Kameraverbindung sollte vorm Instanzieren überprüft werden.
      */
     public UDPStreamer (Camera camera, string hostname, uint16 port) {
-        Object (camera: camera);
+        Object (camera : camera);
 
         this.hostname = hostname;
         this.port = port;
@@ -81,6 +81,10 @@ public class THOMAS.UDPStreamer : Object {
     }
 
     private void send_frame (Gdk.Pixbuf frame) {
+        if (output_stream == null) {
+            return;
+        }
+
         try {
             uint8[] frame_data;
 
@@ -124,7 +128,7 @@ public class THOMAS.UDPStreamer : Object {
 
             /*
              * Übertragung stoppen
-             * TODO: Falls die Exception auch bei Verbindungsunterbrechungen eintritt, diesen Aufruf löschen.
+             * TODO: Bei Verbindungsverlust muss die Übertragung durch den Clienten neu gestartet werden.
              */
             stop ();
             camera.stop ();
