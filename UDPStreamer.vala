@@ -53,7 +53,7 @@ public class THOMAS.UDPStreamer : Object {
         stop ();
     }
 
-    public void setup () {
+    public bool setup () {
         try {
             debug ("Verbinde zu %s:%u...", hostname, port);
 
@@ -62,10 +62,12 @@ public class THOMAS.UDPStreamer : Object {
         } catch (Error e) {
             warning ("Verbindung fehlgeschlagen: %s", e.message);
 
-            return;
+            return false;
         }
 
         debug ("Verbindung hergestellt.");
+
+        return true;
     }
 
     public void start () {

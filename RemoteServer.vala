@@ -122,12 +122,14 @@ public class THOMAS.RemoteServer : Object {
         int streamer_id = streamer_ids++;
 
         UDPStreamer streamer = new UDPStreamer (camera, viewer_host, viewer_port);
-        streamer.setup ();
-        streamer.start ();
 
-        camera.start ();
+        if (streamer.setup ()) {
+            streamer.start ();
 
-        streamers.@set (streamer_id, streamer);
+            camera.start ();
+
+            streamers.@set (streamer_id, streamer);
+        }
 
         return streamer_id;
     }
