@@ -76,12 +76,12 @@ public class THOMAS.MotorControl : SerialDevice {
     public void set_motor_speed (Motor motor, short speed) {
         /* Geschwindigkeitswerte des linken Motors aktualisieren */
         if (motor == Motor.LEFT || motor == Motor.BOTH) {
-            current_speed[MOTOR_LEFT_ID] = wanted_speed[MOTOR_LEFT_ID] = speed;
+            current_speed[MOTOR_LEFT_ID] = wanted_speed[MOTOR_LEFT_ID] = (speed > 255 ? 255 : speed < -255 ? -255 : speed);
         }
 
         /* Geschwindigkeitswerte des rechten Motors aktualisieren */
         if (motor == Motor.RIGHT || motor == Motor.BOTH) {
-            current_speed[MOTOR_RIGHT_ID] = wanted_speed[MOTOR_RIGHT_ID] = speed;
+            current_speed[MOTOR_RIGHT_ID] = wanted_speed[MOTOR_RIGHT_ID] = (speed > 255 ? 255 : speed < -255 ? -255 : speed);
         }
     }
 
@@ -93,12 +93,12 @@ public class THOMAS.MotorControl : SerialDevice {
 
         /* Zielgeschwindigkeit des linken Motors setzen */
         if (motor == Motor.LEFT || motor == Motor.BOTH) {
-            wanted_speed[MOTOR_LEFT_ID] = speed;
+            wanted_speed[MOTOR_LEFT_ID] = (speed > 255 ? 255 : speed < -255 ? -255 : speed);
         }
 
         /* Zielgeschwindigkeit des rechten Motors setzen */
         if (motor == Motor.RIGHT || motor == Motor.BOTH) {
-            wanted_speed[MOTOR_RIGHT_ID] = speed;
+            wanted_speed[MOTOR_RIGHT_ID] = (speed > 255 ? 255 : speed < -255 ? -255 : speed);
         }
 
         /* Neue Beschleunigung beginnen */
