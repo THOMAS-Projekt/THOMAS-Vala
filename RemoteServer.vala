@@ -33,8 +33,14 @@ public class THOMAS.RemoteServer : Object {
     /* Wird verwendet um Kamera-Streamern eindeutige IDs zuzuweisen. */
     private int streamer_ids = 0;
 
+    /* Wird verwendet um Distanz-Karten eindeutige IDs zuzuweisen. */
+    private int map_ids = 0;
+
     /* Liste der laufenden Kamerastreams */
     private Gee.HashMap<int, UDPStreamer> streamers;
+
+    /* Liste der erstellten Umgebungskarten */
+    private Gee.HashMap<int, DistanceMap> distance_maps;
 
     public RemoteServer (Arduino? arduino, MotorControl? motor_control, Camera? camera, uint16 port) {
         this.arduino = arduino;
@@ -42,6 +48,7 @@ public class THOMAS.RemoteServer : Object {
         this.camera = camera;
 
         streamers = new Gee.HashMap<int, UDPStreamer> ();
+        distance_maps = new Gee.HashMap<int, DistanceMap> ();
 
         try {
             dbus_server = new DBusServer.sync ("tcp:host=0.0.0.0,port=%u".printf (port),
@@ -163,5 +170,20 @@ public class THOMAS.RemoteServer : Object {
         }
 
         return true;
+    }
+
+    public int start_new_scan () {
+        if (arduino == null) {
+            return -1;
+        }
+
+        int map_id = map_ids++;
+
+        DistanceMap distance_map = new DistanceMap (arduino);
+        distance_map.setup ();
+
+        distance_maps.@set (map_id, distance_map);
+
+        return map_id;
     }
 }

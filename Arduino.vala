@@ -18,7 +18,7 @@
  */
 
 public class THOMAS.Arduino : SerialDevice {
-    private static const uint BAUDRATE = Posix.B9600;
+    private static const uint BAUDRATE = Posix.B115200;
 
     public enum MessagePriority {
         INFO,
@@ -147,6 +147,24 @@ public class THOMAS.Arduino : SerialDevice {
         if (base.read_package ()[0] != 1) {
             error ("Fehler beim Setzen der Signalstärke.");
         }
+    }
+
+    public uint16[] do_distance_measurement (uint8 angle, uint8 small_count, uint8 large_count) {
+        uint16[] measurements = {};
+
+        base.send_package ({ 6, angle, small_count, large_count });
+
+        uint8[] received = base.read_package ();
+
+        if (received.length != (small_count + large_count) * 2) {
+            warning ("Die Anzahl empfangener Messwerte stimmt nicht mit der Anfrage überein.");
+        }
+
+        for (int i = 0; i < received.length - 1; i += 2) {
+            measurements += (received[i] << 8) + received[i + 1];
+        }
+
+        return measurements;
     }
 
     private void enable_minimalmode () {

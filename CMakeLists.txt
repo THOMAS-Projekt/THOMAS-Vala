@@ -48,6 +48,7 @@ vala_precompile (VALA_C
     Camera.vala
     UDPStreamer.vala
     SystemInformation.vala
+    DistanceMap.vala
 PACKAGES
     gio-2.0
     gee-0.8
