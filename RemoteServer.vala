@@ -24,6 +24,9 @@ public class THOMAS.RemoteServer : Object {
     public signal void net_load_changed (uint64 bytes_in, uint64 bytes_out);
     public signal void free_drive_space_changed (int megabytes);
 
+    public signal void map_scan_continued (int map_id, uint8 angle, uint16[] step_distances);
+    public signal void map_scan_finished (int map_id);
+
     private Arduino? arduino = null;
     private MotorControl? motor_control = null;
     private Camera? camera = null;
@@ -35,6 +38,9 @@ public class THOMAS.RemoteServer : Object {
 
     /* Wird verwendet um Distanz-Karten eindeutige IDs zuzuweisen. */
     private int map_ids = 0;
+
+    /* Zählt die laufenden Scanvorgänge. */
+    private int running_scans = 0;
 
     /* Liste der laufenden Kamerastreams */
     private Gee.HashMap<int, UDPStreamer> streamers;
@@ -181,9 +187,46 @@ public class THOMAS.RemoteServer : Object {
 
         DistanceMap distance_map = new DistanceMap (arduino);
         distance_map.setup ();
+        distance_map.scan_continued.connect ((angle, step_distances) => {
+            map_scan_continued (map_id, angle, step_distances);
+        });
+        distance_map.scan_finished.connect (() => {
+            map_scan_finished (map_id);
+            running_scans--;
+
+            reset_scanner_position ();
+        });
 
         distance_maps.@set (map_id, distance_map);
 
+        running_scans++;
+
         return map_id;
+    }
+
+    public bool stop_scan (int map_id) {
+        if (arduino == null) {
+            return false;
+        }
+
+        DistanceMap? distance_map;
+        distance_maps.unset (map_id, out distance_map);
+
+        if (distance_map != null) {
+            if (distance_map.stop ()) {
+                running_scans--;
+            }
+        }
+
+        reset_scanner_position ();
+
+        return true;
+    }
+
+    private void reset_scanner_position () {
+        if (running_scans <= 0) {
+            set_cam_position (0, 105);
+            running_scans = 0;
+        }
     }
 }

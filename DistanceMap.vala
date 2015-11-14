@@ -21,20 +21,48 @@ public class THOMAS.DistanceMap : Object {
     private static const uint8 SMALL_SENSOR_MEASUREMENT_COUNT = 10;
     private static const uint8 LARGE_SENSOR_MEASUREMENT_COUNT = 10;
 
+    public signal void scan_continued (uint8 angle, uint16[] step_distances);
+    public signal void scan_finished ();
+
     public Arduino arduino { private get; construct; }
+
+    private int scanner_id = -1;
 
     public DistanceMap (Arduino arduino) {
         Object (arduino: arduino);
     }
 
+    ~DistanceMap () {
+        stop ();
+    }
+
     public void setup () {
         uint8 current_angle = 5;
 
-        Timeout.add (100, () => {
-            debug (current_angle.to_string ());
-            arduino.do_distance_measurement (current_angle+=2, SMALL_SENSOR_MEASUREMENT_COUNT, LARGE_SENSOR_MEASUREMENT_COUNT);
+        scanner_id = (int)Timeout.add (100, () => {
+            uint16[] distances = arduino.do_distance_measurement (current_angle += 2, SMALL_SENSOR_MEASUREMENT_COUNT, LARGE_SENSOR_MEASUREMENT_COUNT);
 
-            return (current_angle < 180);
+            scan_continued (current_angle, distances);
+
+            if (current_angle < 180) {
+                return true;
+            }
+
+            scan_finished ();
+            scanner_id = -1;
+
+            return false;
         });
+    }
+
+    public bool stop () {
+        if (scanner_id >= 0) {
+            Source.remove (scanner_id);
+            scanner_id = -1;
+
+            return true;
+        }
+
+        return false;
     }
 }
