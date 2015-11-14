@@ -28,7 +28,7 @@ add_definitions (-w)
 
 # Auf Abhängigkeiten prüfen
 find_package (PkgConfig)
-pkg_check_modules (DEPS REQUIRED gthread-2.0 gio-2.0 gee-0.8 libnm-glib opencv gdk-pixbuf-2.0)
+pkg_check_modules (DEPS REQUIRED gthread-2.0 gio-2.0 gee-0.8 libnm-glib opencv gdk-pixbuf-2.0 libgtop-2.0)
 
 # Bibliotheken linken
 add_definitions (${DEPS_CFLAGS})
@@ -47,6 +47,7 @@ vala_precompile (VALA_C
     RemoteServer.vala
     Camera.vala
     UDPStreamer.vala
+    SystemInformation.vala
 PACKAGES
     gio-2.0
     gee-0.8
@@ -55,6 +56,7 @@ PACKAGES
     libnm-glib
     opencv
     gdk-pixbuf-2.0
+    libgtop-2.0
 OPTIONS
     --vapidir=../vapi/
     --thread

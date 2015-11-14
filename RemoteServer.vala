@@ -19,6 +19,11 @@
 
 [DBus (name = "thomas.server")]
 public class THOMAS.RemoteServer : Object {
+    public signal void cpu_load_changed (double cpu_load);
+    public signal void memory_usage_changed (double memory_usage);
+    public signal void net_load_changed (uint64 bytes_in, uint64 bytes_out);
+    public signal void free_drive_space_changed (int megabytes);
+
     private Arduino? arduino = null;
     private MotorControl? motor_control = null;
     private Camera? camera = null;

@@ -62,6 +62,7 @@ public class THOMAS.Main : Object {
     private Relais? relais = null;
     private Camera? camera = null;
     private RemoteServer remote_server;
+    private SystemInformation system_information;
 
     public Main () {
         main_loop = new MainLoop ();
@@ -115,6 +116,12 @@ public class THOMAS.Main : Object {
             remote_server = new RemoteServer (arduino, motor_control, camera, 4242);
         }
 
+        debug ("Initialisiere Systemmonitor...");
+        {
+            system_information = new SystemInformation ("eth0");
+            system_information.setup ();
+        }
+
         debug ("Verknüpfe Ereignisse...");
         {
             connect_signals ();
@@ -145,6 +152,22 @@ public class THOMAS.Main : Object {
             }
 
             arduino.update_signal_strength (signal_strength);
+        });
+
+        system_information.cpu_load_changed.connect ((cpu_load) => {
+            remote_server.cpu_load_changed (cpu_load);
+        });
+
+        system_information.memory_usage_changed.connect ((memory_usage) => {
+            remote_server.memory_usage_changed (memory_usage);
+        });
+
+        system_information.net_load_changed.connect ((bytes_in, bytes_out) => {
+            remote_server.net_load_changed (bytes_in, bytes_out);
+        });
+
+        system_information.free_drive_space_changed.connect ((megabytes) => {
+            remote_server.free_drive_space_changed (megabytes);
         });
     }
 
