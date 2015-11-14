@@ -50,6 +50,9 @@ public class THOMAS.MotorControl : SerialDevice {
     /* Die Zielgeschwindigkeit */
     private short[] wanted_speed;
 
+    /* Timer der die Zeit zwischen Neuberechnungen zählt */
+    private Timer last_recalculation_timer;
+
     public MotorControl (string tty_name) {
         base (tty_name, BAUDRATE);
         base.attach ((termios) => {
@@ -60,6 +63,10 @@ public class THOMAS.MotorControl : SerialDevice {
         /* Ausgangsgeschwindigkeit */
         current_speed = { 0, 0 };
         wanted_speed = { 0, 0 };
+
+        /* Neuberechnungs-Timer erstellen */
+        last_recalculation_timer = new Timer ();
+        last_recalculation_timer.start ();
     }
 
     public void setup () {
@@ -109,6 +116,12 @@ public class THOMAS.MotorControl : SerialDevice {
     }
 
     private bool recalculate_motor_speed () {
+        if (last_recalculation_timer.elapsed () < 0.09) {
+            return true;
+        }
+
+        last_recalculation_timer.start ();
+
         /* Ausstehende Geschwindigkeitsänderungen bestimmen */
         short pending_difference_left = (wanted_speed[MOTOR_LEFT_ID].abs () - current_speed[MOTOR_LEFT_ID].abs ()).abs ();
         short pending_difference_right = (wanted_speed[MOTOR_RIGHT_ID].abs () - current_speed[MOTOR_RIGHT_ID].abs ()).abs ();
