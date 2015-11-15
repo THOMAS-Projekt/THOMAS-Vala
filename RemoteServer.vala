@@ -19,6 +19,9 @@
 
 [DBus (name = "thomas.server")]
 public class THOMAS.RemoteServer : Object {
+    public signal void camera_stream_registered (int streamer_id);
+    public signal void distance_map_registered (int map_id);
+
     public signal void cpu_load_changed (double cpu_load);
     public signal void memory_usage_changed (double memory_usage);
     public signal void net_load_changed (uint64 bytes_in, uint64 bytes_out);
@@ -147,6 +150,8 @@ public class THOMAS.RemoteServer : Object {
             camera.start ();
 
             streamers.@set (streamer_id, streamer);
+
+            camera_stream_registered (streamer_id);
         }
 
         return streamer_id;
@@ -198,6 +203,8 @@ public class THOMAS.RemoteServer : Object {
         });
 
         distance_maps.@set (map_id, distance_map);
+
+        distance_map_registered (map_id);
 
         running_scans++;
 
