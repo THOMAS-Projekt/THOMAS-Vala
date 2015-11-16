@@ -23,9 +23,6 @@ include (ValaVersion)
 ensure_vala_version ("0.18" MINIMUM)
 include (ValaPrecompile)
 
-# C-Compiler Warnungen ausblenden
-add_definitions (-w)
-
 # Auf Abhängigkeiten prüfen
 find_package (PkgConfig)
 pkg_check_modules (DEPS REQUIRED gthread-2.0 gio-2.0 gee-0.8 libnm-glib opencv gdk-pixbuf-2.0 libgtop-2.0)
@@ -35,37 +32,5 @@ add_definitions (${DEPS_CFLAGS})
 link_libraries (${DEPS_LIBRARIES})
 link_directories (${DEPS_LIBRARY_DIRS})
 
-# Configure precompile
-vala_precompile (VALA_C
-    Main.vala
-    Logger.vala
-    NetworkManager.vala
-    Arduino.vala
-    SerialDevice.vala
-    MotorControl.vala
-    Relais.vala
-    RemoteServer.vala
-    Camera.vala
-    UDPStreamer.vala
-    SystemInformation.vala
-    DistanceMap.vala
-PACKAGES
-    gio-2.0
-    gee-0.8
-    posix
-    linux
-    libnm-glib
-    opencv
-    gdk-pixbuf-2.0
-    libgtop-2.0
-OPTIONS
-    --vapidir=../vapi/
-    --thread
-    --target-glib 2.32
-)
-
-# Add executable
-add_executable (${CMAKE_PROJECT_NAME} ${VALA_C})
-
-# Installation
-install (TARGETS ${CMAKE_PROJECT_NAME} RUNTIME DESTINATION bin)
+# Unterverzeichnisse einbeziehen
+add_subdirectory (src)
