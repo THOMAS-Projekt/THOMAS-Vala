@@ -45,6 +45,10 @@ public class THOMAS.NetworkManager : NM.Client {
         }
     }
 
+    public void force_update () {
+        update_active_access_point ();
+    }
+
     private void update_active_access_point () {
         active_access_point = wifi_device.get_active_access_point ();
 

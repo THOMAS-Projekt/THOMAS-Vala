@@ -22,6 +22,8 @@ public class THOMAS.RemoteServer : Object {
     public signal void camera_stream_registered (int streamer_id);
     public signal void distance_map_registered (int map_id);
 
+    public signal void wifi_ssid_changed (string ssid);
+    public signal void wifi_signal_strength_changed (uint8 signal_strength);
     public signal void cpu_load_changed (double cpu_load);
     public signal void memory_usage_changed (double memory_usage);
     public signal void net_load_changed (uint64 bytes_in, uint64 bytes_out);
@@ -33,6 +35,8 @@ public class THOMAS.RemoteServer : Object {
     private Arduino? arduino = null;
     private MotorControl? motor_control = null;
     private Camera? camera = null;
+    private NetworkManager network_manager;
+    private SystemInformation system_information;
 
     private DBusServer? dbus_server = null;
 
@@ -51,10 +55,12 @@ public class THOMAS.RemoteServer : Object {
     /* Liste der erstellten Umgebungskarten */
     private Gee.HashMap<int, DistanceMap> distance_maps;
 
-    public RemoteServer (Arduino? arduino, MotorControl? motor_control, Camera? camera, uint16 port) {
+    public RemoteServer (Arduino? arduino, MotorControl? motor_control, Camera? camera, NetworkManager network_manager, SystemInformation system_information, uint16 port) {
         this.arduino = arduino;
         this.motor_control = motor_control;
         this.camera = camera;
+        this.network_manager = network_manager;
+        this.system_information = system_information;
 
         streamers = new Gee.HashMap<int, UDPStreamer> ();
         distance_maps = new Gee.HashMap<int, DistanceMap> ();
@@ -226,6 +232,13 @@ public class THOMAS.RemoteServer : Object {
         }
 
         reset_scanner_position ();
+
+        return true;
+    }
+
+    public bool force_telemetry_update () {
+        network_manager.force_update ();
+        system_information.force_update ();
 
         return true;
     }

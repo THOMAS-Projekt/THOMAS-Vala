@@ -24,6 +24,7 @@ public class THOMAS.Main : Object {
         { "motor-tty", 'M', 0, OptionArg.STRING, ref motor_tty, "Port der Motorsteuerung", "PORT/NONE" },
         { "relais-tty", 'R', 0, OptionArg.STRING, ref relais_tty, "Port der Relaiskarte", "PORT/NONE" },
         { "camera", 'C', 0, OptionArg.INT, ref camera_id, "ID der Kamera", "ID/-1" },
+        { "network-interface", 'N', 0, OptionArg.STRING, ref network_interface, "Das fuer Statistiken zu benutzende Netzwerkinterface", "INTERFACE" },
         { "enable-minimalmode", 'm', 0, OptionArg.NONE, ref enable_minimalmode, "Aktiviert den Minimalmodus des Arduinos", null },
         { null }
     };
@@ -33,6 +34,7 @@ public class THOMAS.Main : Object {
     private static string? motor_tty = null;
     private static string? relais_tty = null;
     private static int camera_id = 0;
+    private static string? network_interface = null;
     private static bool enable_minimalmode = false;
 
     public static void main (string[] args) {
@@ -40,7 +42,7 @@ public class THOMAS.Main : Object {
             warning ("Threads werden möglicherweise nicht unterstützt.");
         }
 
-        var options = new OptionContext ("Beispiel");
+        var options = new OptionContext ("Server starten");
         options.set_help_enabled (true);
         options.add_main_entries (OPTIONS, null);
 
@@ -111,15 +113,15 @@ public class THOMAS.Main : Object {
             }
         }
 
-        debug ("Initialisiere Steuerungsserver...");
-        {
-            remote_server = new RemoteServer (arduino, motor_control, camera, 4242);
-        }
-
         debug ("Initialisiere Systemmonitor...");
         {
-            system_information = new SystemInformation ("eth0");
+            system_information = new SystemInformation (network_interface == null ? "wlan0" : network_interface);
             system_information.setup ();
+        }
+
+        debug ("Initialisiere Steuerungsserver...");
+        {
+            remote_server = new RemoteServer (arduino, motor_control, camera, network_manager, system_information, 4242);
         }
 
         debug ("Verknüpfe Ereignisse...");
@@ -139,19 +141,21 @@ public class THOMAS.Main : Object {
 
     private void connect_signals () {
         network_manager.ssid_changed.connect ((ssid) => {
-            if (arduino == null) {
-                return;
-            }
+            string checked_ssid = (ssid == null ? "Nicht verbunden" : ssid);
 
-            arduino.update_ssid (ssid == null ? "Nicht verbunden" : ssid);
+            remote_server.wifi_ssid_changed (checked_ssid);
+
+            if (arduino != null) {
+                arduino.update_ssid (checked_ssid);
+            }
         });
 
         network_manager.signal_strength_changed.connect ((signal_strength) => {
-            if (arduino == null) {
-                return;
-            }
+            remote_server.wifi_signal_strength_changed (signal_strength);
 
-            arduino.update_signal_strength (signal_strength);
+            if (arduino != null) {
+                arduino.update_signal_strength (signal_strength);
+            }
         });
 
         system_information.cpu_load_changed.connect ((cpu_load) => {

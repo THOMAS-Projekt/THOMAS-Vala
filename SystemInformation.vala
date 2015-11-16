@@ -76,6 +76,27 @@ public class THOMAS.SystemInformation : Object {
         });
     }
 
+    public void force_update () {
+        /*
+         * Das frühzeitige Abrufen einiger Telemetriedaten könnte zwar zu Fehlausgaben führen,
+         * diese sind hier aber nicht weiter tragisch, wenn überhaupt bemerkbar.
+         */
+
+        /* CPU Last aktualisieren */
+        cpu_load_changed (get_cpu_load ());
+
+        /* Ram-Belegung aktualisieren */
+        memory_usage_changed (get_memory_usage ());
+
+        /* Netzwerk Last aktualisieren (Werte werden hier nicht gespeichert um nachfolgende Messung nicht zu beeinträchtigen) */
+        uint64 bytes_in, bytes_out;
+        get_net_load (out bytes_in, out bytes_out);
+        net_load_changed (bytes_in - last_net_load_in, bytes_out - last_net_load_out);
+
+        /* Freien Speicher aktualisieren */
+        free_drive_space_changed (get_free_drive_space ());
+    }
+
     private double get_cpu_load () {
         /* CPU Daten abrufen */
         GTop.Cpu cpu_data;
