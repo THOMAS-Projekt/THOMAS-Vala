@@ -34,6 +34,7 @@ public class THOMAS.RemoteServer : Object {
 
     private Arduino? arduino = null;
     private MotorControl? motor_control = null;
+    private Relais? relais = null;
     private Camera? camera = null;
     private NetworkManager network_manager;
     private SystemInformation system_information;
@@ -55,9 +56,10 @@ public class THOMAS.RemoteServer : Object {
     /* Liste der erstellten Umgebungskarten */
     private Gee.HashMap<int, DistanceMap> distance_maps;
 
-    public RemoteServer (Arduino? arduino, MotorControl? motor_control, Camera? camera, NetworkManager network_manager, SystemInformation system_information, uint16 port) {
+    public RemoteServer (Arduino? arduino, MotorControl? motor_control, Relais? relais, Camera? camera, NetworkManager network_manager, SystemInformation system_information, uint16 port) {
         this.arduino = arduino;
         this.motor_control = motor_control;
+        this.relais = relais;
         this.camera = camera;
         this.network_manager = network_manager;
         this.system_information = system_information;
@@ -137,6 +139,16 @@ public class THOMAS.RemoteServer : Object {
         }
 
         arduino.change_cam_position (camera, degree);
+
+        return true;
+    }
+
+    public bool set_relay (int port, bool state) {
+        if (relais == null) {
+            return false;
+        }
+
+        relais.set_relay (port, state);
 
         return true;
     }

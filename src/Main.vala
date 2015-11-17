@@ -121,7 +121,7 @@ public class THOMAS.Main : Object {
 
         debug ("Initialisiere Steuerungsserver...");
         {
-            remote_server = new RemoteServer (arduino, motor_control, camera, network_manager, system_information, 4242);
+            remote_server = new RemoteServer (arduino, motor_control, relais, camera, network_manager, system_information, 4242);
         }
 
         debug ("Verknüpfe Ereignisse...");

@@ -20,6 +20,8 @@
 public class THOMAS.Relais : SerialDevice {
     private static const uint BAUDRATE = Posix.B19200;
 
+    private bool[] relay_states;
+
     public Relais (string tty_name) {
         base (tty_name, BAUDRATE);
         base.attach ((termios) => {
@@ -43,6 +45,8 @@ public class THOMAS.Relais : SerialDevice {
     }
 
     public void setup () {
+        relay_states = new bool[8];
+
         /* Initalisierung */
         if (!send_with_checksum ({ 1, 1, 0 })) {
             warning ("Die Relaiskarte wurde möglicherweise nicht korrekt initialisiert.");
@@ -52,6 +56,16 @@ public class THOMAS.Relais : SerialDevice {
     }
 
     public void set_relay (int port, bool state) {
+        /* Port auf Gültigkeit prüfen */
+        if (port < 1 || port > 8) {
+            return;
+        }
+
+        /* Prüfen, ob der Zustand bereits angenommen wurde */
+        if (relay_states[port - 1] == state) {
+            return;
+        }
+
         uint8 val = 0;
         uint8 rval = 0;
 
@@ -66,11 +80,17 @@ public class THOMAS.Relais : SerialDevice {
         if (!send_with_checksum ({ 3, 1, rval })) {
             warning ("Das Relay wurde möglicherweise nicht korrekt geschaltet.");
         }
+
+        relay_states[port - 1] = state;
     }
 
     public void set_all (bool state) {
         if (!send_with_checksum ({ 3, 1, state ? 255 : 0 })) {
             warning ("Die Relais wurdne möglicherweise nicht korrekt geschaltet.");
+        }
+
+        for (int i = 0; i < 8; i++) {
+            relay_states[i] = state;
         }
     }
 
