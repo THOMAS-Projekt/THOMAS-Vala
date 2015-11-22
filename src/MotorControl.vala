@@ -123,8 +123,8 @@ public class THOMAS.MotorControl : SerialDevice {
         last_recalculation_timer.start ();
 
         /* Ausstehende Geschwindigkeitsänderungen bestimmen */
-        short pending_difference_left = (wanted_speed[MOTOR_LEFT_ID].abs () - current_speed[MOTOR_LEFT_ID].abs ()).abs ();
-        short pending_difference_right = (wanted_speed[MOTOR_RIGHT_ID].abs () - current_speed[MOTOR_RIGHT_ID].abs ()).abs ();
+        short pending_difference_left = (wanted_speed[MOTOR_LEFT_ID] - current_speed[MOTOR_LEFT_ID]).abs ();
+        short pending_difference_right = (wanted_speed[MOTOR_RIGHT_ID] - current_speed[MOTOR_RIGHT_ID]).abs ();
 
         if (pending_difference_left > 0) {
             /* Vorzeichen bestimmen */
