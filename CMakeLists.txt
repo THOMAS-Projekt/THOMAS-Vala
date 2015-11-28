@@ -29,7 +29,7 @@ pkg_check_modules (DEPS REQUIRED gthread-2.0 gio-2.0 gee-0.8 libnm-glib opencv g
 
 # Bibliotheken linken
 add_definitions (${DEPS_CFLAGS})
-link_libraries (${DEPS_LIBRARIES})
+link_libraries (${DEPS_LIBRARIES} -lm)
 link_directories (${DEPS_LIBRARY_DIRS})
 
 # Unterverzeichnisse einbeziehen
