@@ -8,6 +8,7 @@ vala_precompile (VALA_C
     MotorControl.vala
     Relais.vala
     RemoteServer.vala
+    ServiceProvider.vala
     Camera.vala
     UDPStreamer.vala
     SystemInformation.vala
@@ -21,6 +22,8 @@ PACKAGES
     opencv
     gdk-pixbuf-2.0
     libgtop-2.0
+    avahi-gobject
+    avahi-client
 OPTIONS
     --vapidir=${CMAKE_SOURCE_DIR}/vapi/
     --thread

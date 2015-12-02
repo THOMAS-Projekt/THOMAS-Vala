@@ -64,6 +64,7 @@ public class THOMAS.Main : Object {
     private Relais? relais = null;
     private Camera? camera = null;
     private RemoteServer remote_server;
+    private ServiceProvider service_provider;
     private SystemInformation system_information;
 
     public Main () {
@@ -122,6 +123,12 @@ public class THOMAS.Main : Object {
         debug ("Initialisiere Steuerungsserver...");
         {
             remote_server = new RemoteServer (arduino, motor_control, relais, camera, network_manager, system_information, 4242);
+        }
+
+        debug ("Initialisiere Avahi-Dienst...");
+        {
+            service_provider = new ServiceProvider (4242);
+            service_provider.setup ();
         }
 
         debug ("Verknüpfe Ereignisse...");
