@@ -50,6 +50,10 @@ public class THOMAS.NetworkManager : NM.Client {
     }
 
     private void update_active_access_point () {
+        if (wifi_device == null) {
+            return;
+        }
+
         active_access_point = wifi_device.get_active_access_point ();
 
         if (active_access_point == null) {
