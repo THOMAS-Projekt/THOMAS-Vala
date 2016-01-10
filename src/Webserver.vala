@@ -112,15 +112,15 @@ public class THOMAS.Webserver : Neutron.Http.Server {
         try {
             parser.load_from_data (message);
 
-            Json.Node? root_node = parser.get_root ();
+            Json.Node? request_root = parser.get_root ();
 
-            if (root_node == null) {
+            if (request_root == null) {
                 warning ("Parsen der Anfrage fehlgeschlagen:\n%s", message);
 
                 return;
             }
 
-            Json.Object request = root_node.get_object ();
+            Json.Object request = request_root.get_object ();
 
             string action = request.get_string_member ("action");
             string method_name = request.get_string_member ("methodName");
@@ -128,15 +128,16 @@ public class THOMAS.Webserver : Neutron.Http.Server {
             Json.Object args = request.get_object_member ("args");
 
             Json.Object response = new Json.Object ();
-            response.set_string_member ("action", "methodResponse");
-            response.set_string_member ("methodName", method_name);
-            response.set_string_member ("responseId", response_id);
 
             if (action != "callMethod") {
                 warning ("Aktion \"%s\" nicht bekannt.", action);
 
                 return;
             }
+
+            response.set_string_member ("action", "methodResponse");
+            response.set_string_member ("methodName", method_name);
+            response.set_string_member ("responseId", response_id);
 
             switch (method_name) {
                 case "setMotorSpeed" :
@@ -216,6 +217,14 @@ public class THOMAS.Webserver : Neutron.Http.Server {
 
                     break;
             }
+
+            Json.Node response_root = new Json.Node (Json.NodeType.OBJECT);
+            response_root.set_object (response);
+
+            Json.Generator generator = new Json.Generator ();
+            generator.set_root (response_root);
+
+            connection.send.begin (generator.to_data (null));
         } catch (Error e) {
             warning ("Parsen der Anfrage fehlgeschlagen: %s\n%s", e.message, message);
         }
