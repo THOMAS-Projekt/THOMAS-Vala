@@ -76,7 +76,7 @@ public class THOMAS.RemoteServer : Object {
 
             dbus_server.new_connection.connect ((connection) => {
                 try {
-                    debug ("Eingehende Verbindung.");
+                    debug ("Eingehende DBus-Verbindung.");
 
                     connection.register_object ("/thomas/server", this);
 

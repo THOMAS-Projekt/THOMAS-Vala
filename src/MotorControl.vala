@@ -40,6 +40,15 @@ public class THOMAS.MotorControl : SerialDevice {
                 case 3: return Motor.BOTH;
             }
         }
+
+        public static Motor from_name (string name) {
+            switch (name.down ()) {
+                case "left": return Motor.LEFT;
+                case "right": return Motor.RIGHT;
+                default:
+                case "both": return Motor.BOTH;
+            }
+        }
     }
 
     private uint accelerate_timer_id = 0;

@@ -25,7 +25,7 @@ include (ValaPrecompile)
 
 # Auf Abhängigkeiten prüfen
 find_package (PkgConfig)
-pkg_check_modules (DEPS REQUIRED gthread-2.0 gio-2.0 gee-0.8 libnm-glib opencv gdk-pixbuf-2.0 libgtop-2.0 avahi-gobject avahi-client)
+pkg_check_modules (DEPS REQUIRED gthread-2.0 gio-2.0 gee-0.8 libnm-glib opencv gdk-pixbuf-2.0 libgtop-2.0 avahi-gobject avahi-client neutron json-glib-1.0)
 
 # Bibliotheken linken
 add_definitions (${DEPS_CFLAGS})

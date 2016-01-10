@@ -8,6 +8,7 @@ vala_precompile (VALA_C
     MotorControl.vala
     Relais.vala
     RemoteServer.vala
+    Webserver.vala
     ServiceProvider.vala
     Camera.vala
     UDPStreamer.vala
@@ -24,6 +25,8 @@ PACKAGES
     libgtop-2.0
     avahi-gobject
     avahi-client
+    neutron
+    json-glib-1.0
 OPTIONS
     --vapidir=${CMAKE_SOURCE_DIR}/vapi/
     --thread

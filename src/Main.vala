@@ -26,6 +26,7 @@ public class THOMAS.Main : Object {
         { "camera", 'C', 0, OptionArg.INT, ref camera_id, "ID der Kamera", "ID/-1" },
         { "network-interface", 'N', 0, OptionArg.STRING, ref network_interface, "Das fuer Statistiken zu benutzende Netzwerkinterface", "INTERFACE" },
         { "enable-minimalmode", 'm', 0, OptionArg.NONE, ref enable_minimalmode, "Aktiviert den Minimalmodus des Arduinos", null },
+        { "html-directory", 'H', 0, OptionArg.STRING, ref html_directory, "Pfad zum HTML-Verzeichnis", "PFAD" },
         { null }
     };
 
@@ -36,6 +37,7 @@ public class THOMAS.Main : Object {
     private static int camera_id = 0;
     private static string? network_interface = null;
     private static bool enable_minimalmode = false;
+    private static string? html_directory = null;
 
     public static void main (string[] args) {
         if (!Thread.supported ()) {
@@ -64,6 +66,7 @@ public class THOMAS.Main : Object {
     private Relais? relais = null;
     private Camera? camera = null;
     private RemoteServer remote_server;
+    private Webserver webserver;
     private ServiceProvider service_provider;
     private SystemInformation system_information;
 
@@ -123,6 +126,11 @@ public class THOMAS.Main : Object {
         debug ("Initialisiere Steuerungsserver...");
         {
             remote_server = new RemoteServer (arduino, motor_control, relais, camera, network_manager, system_information, 4242);
+        }
+
+        debug ("Initialisiere Webserver...");
+        {
+            webserver = new Webserver (remote_server, html_directory == null ? Environment.get_current_dir () : html_directory, 8080);
         }
 
         debug ("Initialisiere Avahi-Dienst...");
