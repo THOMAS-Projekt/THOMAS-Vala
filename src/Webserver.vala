@@ -25,12 +25,6 @@ public class THOMAS.Webserver : Neutron.Http.Server {
     public Webserver (RemoteServer remote_server, string html_directory, uint16 port) {
         Object (remote_server: remote_server, html_directory: html_directory);
 
-        /*
-         * Aktivieren, falls nötig.
-         * Neutron.ThreadController thread_controller = new Neutron.ThreadController (4);
-         * thread_controller.push_default ();
-         */
-
         this.select_entity.connect (connection_handler);
         this.port = port;
 
