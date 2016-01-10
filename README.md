@@ -2,4 +2,4 @@
 Vala-Implementierung des Servers
 
 ## Externe Bibliotheken
-https://github.com/Richard-W/neutron (Evtl. ohne `--enable-debian` kompilieren!)
+https://github.com/MarcusWichelmann/neutron (Evtl. ohne `--enable-debian` kompilieren!)

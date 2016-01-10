@@ -44,7 +44,7 @@ public class THOMAS.Webserver : Neutron.Http.Server {
     }
 
     private Neutron.Http.Entity create_websocket_entity () {
-        Neutron.Websocket.HttpUpgradeEntity entity = new Neutron.Websocket.HttpUpgradeEntity ();
+        Neutron.Websocket.HttpUpgradeEntity entity = new Neutron.Websocket.HttpUpgradeEntity (false);
         entity.incoming.connect (websocket_connection_handler);
 
         debug ("Eingehende Websocket-Verbindung");
