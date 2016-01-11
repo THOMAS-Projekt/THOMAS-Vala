@@ -22,6 +22,12 @@ public class THOMAS.Webserver : Neutron.Http.Server {
 
     public string html_directory { private get; construct; }
 
+    private Gee.ArrayList<Neutron.Websocket.Connection> connections;
+
+    construct {
+        connections = new Gee.ArrayList<Neutron.Websocket.Connection> ();
+    }
+
     public Webserver (RemoteServer remote_server, string html_directory, uint16 port) {
         Object (remote_server: remote_server, html_directory: html_directory);
 
@@ -29,6 +35,90 @@ public class THOMAS.Webserver : Neutron.Http.Server {
         this.port = port;
 
         debug ("Webserver auf Port %u gestartet.", port);
+
+        connect_signals ();
+    }
+
+    private void connect_signals () {
+        remote_server.camera_stream_registered.connect ((streamer_id) => {
+            Json.Object args = new Json.Object ();
+            args.set_int_member ("streamerId", streamer_id);
+
+            broadcast_signal ("cameraStreamRegistered", args);
+        });
+
+        remote_server.distance_map_registered.connect ((map_id) => {
+            Json.Object args = new Json.Object ();
+            args.set_int_member ("mapId", map_id);
+
+            broadcast_signal ("distanceMapRegistered", args);
+        });
+
+        remote_server.wifi_ssid_changed.connect ((ssid) => {
+            Json.Object args = new Json.Object ();
+            args.set_string_member ("ssid", ssid);
+
+            broadcast_signal ("wifiSsidChanged", args);
+        });
+
+        remote_server.wifi_signal_strength_changed.connect ((signal_strength) => {
+            Json.Object args = new Json.Object ();
+            args.set_int_member ("signalStrength", signal_strength);
+
+            broadcast_signal ("wifiSignalStrengthChanged", args);
+        });
+
+        remote_server.cpu_load_changed.connect ((cpu_load) => {
+            Json.Object args = new Json.Object ();
+            args.set_double_member ("cpuLoad", cpu_load);
+
+            broadcast_signal ("cpuLoadChanged", args);
+        });
+
+        remote_server.memory_usage_changed.connect ((memory_usage) => {
+            Json.Object args = new Json.Object ();
+            args.set_double_member ("memoryUsage", memory_usage);
+
+            broadcast_signal ("memoryUsageChanged", args);
+        });
+
+        remote_server.net_load_changed.connect ((bytes_in, bytes_out) => {
+            Json.Object args = new Json.Object ();
+            args.set_int_member ("bytesIn", (int64)bytes_in);
+            args.set_int_member ("bytesOut", (int64)bytes_out);
+
+            broadcast_signal ("netLoadChanged", args);
+        });
+
+        remote_server.free_drive_space_changed.connect ((megabytes) => {
+            Json.Object args = new Json.Object ();
+            args.set_int_member ("megabytes", megabytes);
+
+            broadcast_signal ("freeDriveSpaceChanged", args);
+        });
+
+        remote_server.map_scan_continued.connect ((map_id, angle, step_distances) => {
+            Json.Object args = new Json.Object ();
+            args.set_int_member ("mapId", map_id);
+            args.set_int_member ("angle", angle);
+
+            Json.Array distances_array = new Json.Array ();
+
+            foreach (uint16 distance in step_distances) {
+                distances_array.add_int_element (distance);
+            }
+
+            args.set_array_member ("stepDistances", distances_array);
+
+            broadcast_signal ("mapScanContinued", args);
+        });
+
+        remote_server.map_scan_finished.connect ((map_id) => {
+            Json.Object args = new Json.Object ();
+            args.set_int_member ("mapId", map_id);
+
+            broadcast_signal ("mapScanFinished", args);
+        });
     }
 
     private void connection_handler (Neutron.Http.Request request, Neutron.Http.EntitySelectContainer container) {
@@ -85,19 +175,17 @@ public class THOMAS.Webserver : Neutron.Http.Server {
 
     private void websocket_connection_handler (Neutron.Websocket.Connection connection) {
         connection.on_message.connect (process_request);
-
         connection.on_error.connect ((message, connection) => {
             warning ("Websocket-Fehler: %s", message);
         });
-
         connection.on_close.connect ((connection) => {
             debug ("Websocket-Verbindung geschlossen.");
 
-            connection.unref ();
+            connections.remove (connection);
         });
-
         connection.start ();
-        connection.ref ();
+
+        connections.add (connection);
     }
 
     private void process_request (string message, Neutron.Websocket.Connection connection) {
@@ -221,6 +309,27 @@ public class THOMAS.Webserver : Neutron.Http.Server {
             connection.send.begin (generator.to_data (null));
         } catch (Error e) {
             warning ("Parsen der Anfrage fehlgeschlagen: %s\n%s", e.message, message);
+        }
+    }
+
+    private void broadcast_signal (string signal_name, Json.Object args) {
+        Json.Object response = new Json.Object ();
+        response.set_string_member ("action", "signalCalled");
+        response.set_string_member ("signalName", signal_name);
+        response.set_object_member ("args", args);
+
+        Json.Node response_root = new Json.Node (Json.NodeType.OBJECT);
+        response_root.set_object (response);
+
+        Json.Generator generator = new Json.Generator ();
+        generator.set_root (response_root);
+
+        broadcast_message (generator.to_data (null));
+    }
+
+    private void broadcast_message (string message) {
+        foreach (Neutron.Websocket.Connection connection in connections) {
+            connection.send.begin (message);
         }
     }
 }
