@@ -25,7 +25,7 @@ PACKAGES
     libgtop-2.0
     avahi-gobject
     avahi-client
-    neutron
+    libsoup-2.4
     json-glib-1.0
 OPTIONS
     --vapidir=${CMAKE_SOURCE_DIR}/vapi/

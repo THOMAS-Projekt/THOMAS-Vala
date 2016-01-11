@@ -17,24 +17,39 @@
  * Boston, MA 02111-1307, USA.
  */
 
-public class THOMAS.Webserver : Neutron.Http.Server {
+public class THOMAS.Webserver : Soup.Server {
+    private static string get_mime_type (string basename) {
+        var name_parts = basename.split (".");
+
+        switch (name_parts[name_parts.length - 1].down ()) {
+            case "html": return "text/html";
+            case "htm": return "text/html";
+            case "jpg": return "image/jpeg";
+            case "jpeg": return "image/jpeg";
+            case "bmp": return "image/bmp";
+            case "png": return "image/png";
+            case "gif": return "image/gif";
+            case "css": return "text/css";
+            case "js": return "text/javascript";
+            default: return "";
+        }
+    }
+
     public RemoteServer remote_server { private get; construct; }
 
     public string html_directory { private get; construct; }
 
-    private Gee.ArrayList<Neutron.Websocket.Connection> connections;
+    private Gee.ArrayList<Soup.WebsocketConnection> websocket_connections;
 
     construct {
-        connections = new Gee.ArrayList<Neutron.Websocket.Connection> ();
+        websocket_connections = new Gee.ArrayList<Soup.WebsocketConnection> ();
     }
 
-    public Webserver (RemoteServer remote_server, string html_directory, uint16 port) {
+    public Webserver (RemoteServer remote_server, string html_directory) {
         Object (remote_server: remote_server, html_directory: html_directory);
 
-        this.select_entity.connect (connection_handler);
-        this.port = port;
-
-        debug ("Webserver auf Port %u gestartet.", port);
+        this.add_websocket_handler ("/socket", null, null, websocket_handler);
+        this.add_handler (null, default_handler);
 
         connect_signals ();
     }
@@ -121,28 +136,9 @@ public class THOMAS.Webserver : Neutron.Http.Server {
         });
     }
 
-    private void connection_handler (Neutron.Http.Request request, Neutron.Http.EntitySelectContainer container) {
-        debug ("Eingehende Webserver-Verbindung auf %s.", request.path);
+    private void default_handler (Soup.Server server, Soup.Message message, string path, HashTable<string, string>? query, Soup.ClientContext client) {
+        debug ("Eingehende Webserver-Verbindung auf \"%s\": %s", path, client.get_host ());
 
-        if (request.path == "/socket") {
-            container.set_entity (create_websocket_entity ());
-
-            return;
-        }
-
-        container.set_entity (create_file_entity (request.path));
-    }
-
-    private Neutron.Http.Entity create_websocket_entity () {
-        Neutron.Websocket.HttpUpgradeEntity entity = new Neutron.Websocket.HttpUpgradeEntity (false);
-        entity.incoming.connect (websocket_connection_handler);
-
-        debug ("Eingehende Websocket-Verbindung");
-
-        return entity;
-    }
-
-    private Neutron.Http.Entity create_file_entity (string path) {
         File file = File.new_for_path ("%s/%s".printf (html_directory, (path == "/" ? "/index.html" : path.replace ("..", ""))));
 
         string? filename = file.get_path ();
@@ -150,7 +146,10 @@ public class THOMAS.Webserver : Neutron.Http.Server {
         if (!file.query_exists () || filename == null) {
             warning ("Datei \"%s\" nicht gefunden.", filename ?? path);
 
-            return new Neutron.Http.NotFoundEntity ();
+            message.set_response ("text/plain", Soup.MemoryUse.COPY, "404: Datei nicht gefunden.".data);
+            message.set_status (404);
+
+            return;
         }
 
         string? basename = file.get_basename ();
@@ -158,37 +157,48 @@ public class THOMAS.Webserver : Neutron.Http.Server {
         if (basename == null) {
             warning ("\"%s\" ist keine Datei.", filename);
 
-            return new Neutron.Http.NotFoundEntity ();
+            message.set_response ("text/plain", Soup.MemoryUse.COPY, "404: Angeforderte URL stellt keine Datei dar.".data);
+            message.set_status (404);
+
+            return;
         }
 
-        string[] basename_parts = basename.split (".");
-        string? mime_type = ContentType.get_mime_type (basename_parts[basename_parts.length - 1]);
+        string mime_type = get_mime_type (basename);
 
-        if (mime_type == null) {
-            warning ("Dateityp von \"%s\" unbekannt.", filename);
+        uint8[] file_content;
 
-            return new Neutron.Http.NotFoundEntity ();
+        try {
+            if (FileUtils.get_data (filename, out file_content)) {
+                message.set_response (mime_type, Soup.MemoryUse.COPY, file_content);
+            } else {
+                message.set_response ("text/plain", Soup.MemoryUse.COPY, "404: Datei nicht lesbar.".data);
+                message.set_status (404);
+            }
+        } catch (Error e) {
+            message.set_response ("text/plain", Soup.MemoryUse.COPY, "404: Datei nicht lesbar: %s".printf (e.message).data);
+            message.set_status (404);
         }
-
-        return new Neutron.Http.FileEntity (mime_type, filename);
     }
 
-    private void websocket_connection_handler (Neutron.Websocket.Connection connection) {
-        connection.on_message.connect (process_request);
-        connection.on_error.connect ((message, connection) => {
-            warning ("Websocket-Fehler: %s", message);
+    private void websocket_handler (Soup.Server server, Soup.WebsocketConnection connection, string path, Soup.ClientContext client) {
+        debug ("Eingehende Websocket-Verbindung: %s", connection.get_origin ());
+
+        connection.message.connect ((type, message) => {
+            process_request ((string)message.get_data (), connection);
         });
-        connection.on_close.connect ((connection) => {
+        connection.error.connect ((error) => {
+            warning ("Websocket-Fehler: %s", error.message);
+        });
+        connection.closed.connect (() => {
             debug ("Websocket-Verbindung geschlossen.");
 
-            connections.remove (connection);
+            websocket_connections.remove (connection);
         });
-        connection.start ();
 
-        connections.add (connection);
+        websocket_connections.add (connection);
     }
 
-    private void process_request (string message, Neutron.Websocket.Connection connection) {
+    private void process_request (string message, Soup.WebsocketConnection connection) {
         Json.Parser parser = new Json.Parser ();
 
         try {
@@ -306,7 +316,7 @@ public class THOMAS.Webserver : Neutron.Http.Server {
             Json.Generator generator = new Json.Generator ();
             generator.set_root (response_root);
 
-            connection.send.begin (generator.to_data (null));
+            connection.send_text (generator.to_data (null));
         } catch (Error e) {
             warning ("Parsen der Anfrage fehlgeschlagen: %s\n%s", e.message, message);
         }
@@ -328,8 +338,8 @@ public class THOMAS.Webserver : Neutron.Http.Server {
     }
 
     private void broadcast_message (string message) {
-        foreach (Neutron.Websocket.Connection connection in connections) {
-            connection.send.begin (message);
+        foreach (Soup.WebsocketConnection connection in websocket_connections) {
+            connection.send_text (message);
         }
     }
 }

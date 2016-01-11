@@ -130,7 +130,14 @@ public class THOMAS.Main : Object {
 
         debug ("Initialisiere Webserver...");
         {
-            webserver = new Webserver (remote_server, html_directory == null ? Environment.get_current_dir () : html_directory, 8080);
+            try {
+                webserver = new Webserver (remote_server, html_directory == null ? Environment.get_current_dir () : html_directory);
+                webserver.listen_all (8080, 0);
+
+                debug ("Webserver auf Port 8080 gestartet.");
+            } catch (Error e) {
+                warning ("Webserver konnte nicht gestartet werden: %s", e.message);
+            }
         }
 
         debug ("Initialisiere Avahi-Dienst...");
