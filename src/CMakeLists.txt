@@ -14,6 +14,7 @@ vala_precompile (VALA_C
     UDPStreamer.vala
     SystemInformation.vala
     DistanceMap.vala
+    MappingAlgorithm.vala
 PACKAGES
     gio-2.0
     gee-0.8

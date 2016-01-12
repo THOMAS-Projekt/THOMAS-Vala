@@ -304,6 +304,11 @@ public class THOMAS.Webserver : Soup.Server {
 
                     break;
 
+                case "setAutomationState":
+                    response.set_boolean_member ("returnedValue", remote_server.set_automation_state (args.get_boolean_member ("enable")));
+
+                    break;
+
                 default:
                     warning ("Methode \"%s\" nicht bekannt.", method_name);
 

@@ -56,6 +56,8 @@ public class THOMAS.RemoteServer : Object {
     /* Liste der erstellten Umgebungskarten */
     private Gee.HashMap<int, DistanceMap> distance_maps;
 
+    private MappingAlgorithm? mapping_algorithm = null;
+
     public RemoteServer (Arduino? arduino, MotorControl? motor_control, Relais? relais, Camera? camera, NetworkManager network_manager, SystemInformation system_information, uint16 port) {
         this.arduino = arduino;
         this.motor_control = motor_control;
@@ -212,12 +214,26 @@ public class THOMAS.RemoteServer : Object {
         distance_map.setup ();
         distance_map.scan_continued.connect ((angle, step_distances) => {
             map_scan_continued (map_id, angle, step_distances);
+
+            if (mapping_algorithm != null) {
+                int sum = 0;
+
+                foreach (uint16 distance in step_distances) {
+                    sum += distance;
+                }
+
+                mapping_algorithm.handle_map_scan_continued (map_id, angle, (uint16)(sum / step_distances.length));
+            }
         });
         distance_map.scan_finished.connect (() => {
             map_scan_finished (map_id);
             running_scans--;
 
             reset_scanner_position ();
+
+            if (mapping_algorithm != null) {
+                mapping_algorithm.handle_map_scan_finished (map_id);
+            }
         });
 
         distance_maps.@set (map_id, distance_map);
@@ -251,6 +267,43 @@ public class THOMAS.RemoteServer : Object {
     public bool force_telemetry_update () {
         network_manager.force_update ();
         system_information.force_update ();
+
+        return true;
+    }
+
+    public bool set_automation_state (bool enable) {
+        if (enable) {
+            if (mapping_algorithm != null) {
+                return false;
+            }
+
+            mapping_algorithm = new MappingAlgorithm ((speed, duration) => {
+                accelerate_to_motor_speed (MotorControl.Motor.BOTH, speed);
+
+                Timeout.add (duration, () => {
+                    accelerate_to_motor_speed (MotorControl.Motor.BOTH, 0);
+
+                    return false;
+                });
+            }, (speed, duration) => {
+                set_motor_speed (MotorControl.Motor.LEFT, speed);
+                set_motor_speed (MotorControl.Motor.RIGHT, -speed);
+
+                Timeout.add (duration, () => {
+                    set_motor_speed (MotorControl.Motor.BOTH, 0);
+
+                    return false;
+                });
+            }, start_new_scan);
+        } else {
+            if (mapping_algorithm == null) {
+                return false;
+            }
+
+            mapping_algorithm = null;
+        }
+
+        debug ("Autonome Steuerung %s.", enable ? "aktiviert" : "deaktiviert");
 
         return true;
     }
