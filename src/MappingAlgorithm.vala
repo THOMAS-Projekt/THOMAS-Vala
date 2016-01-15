@@ -35,16 +35,22 @@ public class THOMAS.MappingAlgorithm : Object {
     private static const double WALL_MAX_DIRECTION_GAP = (Math.PI / 180) * 40;
 
     /* Startwinkel des rechtsliegenden Bereiches */
-    private static const double RIGHT_AREA_START_ANGLE = (Math.PI / 180) * 0;
+    private static const double RIGHT_AREA_START_ANGLE = (Math.PI / 180) * 120;
 
     /* Endwinkel des rechtsliegenden Bereiches */
-    private static const double RIGHT_AREA_END_ANGLE = (Math.PI / 180) * 45;
+    private static const double RIGHT_AREA_END_ANGLE = (Math.PI / 180) * 180;
 
     /* Der Maximale Abstand einer rechtsliegenden Wand zum Roboter */
     private static const uint16 RIGHT_WALL_MAX_DISTANCE = 100;
 
     /* Mindestlänge der Summe der rechtsliegenden Wände zur Überprüfung der Aussagekräftigkeit */
     private static const int MIN_RIGHT_WALL_LENGTH_SUM = 20;
+
+    /* Die Zeit für die die Motoren für eine Richtungskorrektur eingeschaltet werden */
+    private static const uint STEP_TURNING_TIME = 500;
+
+    /* Die Zeit für die die Motoren für einen Schritt nach vorne eingeschaltet werden */
+    private static const uint STEP_MOVING_TIME = 500;
 
     /* Konvertiert Grad in Bogemmaß */
     private static double deg_to_rad (uint8 degree) {
@@ -102,7 +108,7 @@ public class THOMAS.MappingAlgorithm : Object {
             uint16 distance = entry.@value;
 
             /* Auftrittspunkt des Messwertes bestimmen */
-            int position_x = (int)(Math.sin (angle - (Math.PI / 2)) * distance);
+            int position_x = (int)(-Math.sin (angle - (Math.PI / 2)) * distance);
             int position_y = (int)(Math.cos (angle - (Math.PI / 2)) * distance);
 
             /* Prüfen, ob dies der erste Messwert ist */
@@ -391,14 +397,26 @@ public class THOMAS.MappingAlgorithm : Object {
         /* Wurde eine Wand gefunden? */
         if (right_wall_direction != null) {
             /* Anhand dieser Wand neu ausrichten */
-            turn ((short)(right_wall_direction * -30), 100);
+            turn ((short)(right_wall_direction * -30), STEP_TURNING_TIME);
+
+            /* Bis zum Ende der Neuausrichtung abwarten */
+            Timeout.add (STEP_TURNING_TIME, () => {
+                /* Forwärtsbewegung */
+                move (200, STEP_MOVING_TIME);
+
+                /* Dies ist keine Schleife */
+                return false;
+            });
+        } else {
+            /* Forwärtsbewegung */
+            move (200, STEP_MOVING_TIME);
         }
 
         /* Neue Messreihe beginnen */
         current_scan = new Gee.TreeMap<double? , uint16> ();
 
         /* Bis zum Ende der Neuausrichtung abwarten */
-        Timeout.add (100, () => {
+        Timeout.add (STEP_MOVING_TIME + (right_wall_direction != null ? STEP_TURNING_TIME : 0), () => {
             /* Neuen Scanvorgang einleiten */
             start_new_scan ();
 
