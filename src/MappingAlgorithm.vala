@@ -47,10 +47,10 @@ public class THOMAS.MappingAlgorithm : Object {
     private static const int MIN_RIGHT_WALL_LENGTH_SUM = 20;
 
     /* Die Zeit für die die Motoren für eine Richtungskorrektur eingeschaltet werden */
-    private static const uint STEP_TURNING_TIME = 500;
+    private static const uint STEP_TURNING_TIME = 1500;
 
     /* Die Zeit für die die Motoren für einen Schritt nach vorne eingeschaltet werden */
-    private static const uint STEP_MOVING_TIME = 500;
+    private static const uint STEP_MOVING_TIME = 1000;
 
     /* Konvertiert Grad in Bogemmaß */
     private static double deg_to_rad (uint8 degree) {
@@ -397,7 +397,7 @@ public class THOMAS.MappingAlgorithm : Object {
         /* Wurde eine Wand gefunden? */
         if (right_wall_direction != null) {
             /* Anhand dieser Wand neu ausrichten */
-            turn ((short)(right_wall_direction * -30), STEP_TURNING_TIME);
+            turn ((short)(right_wall_direction * -100), STEP_TURNING_TIME);
 
             /* Bis zum Ende der Neuausrichtung abwarten */
             Timeout.add (STEP_TURNING_TIME, () => {
@@ -409,7 +409,7 @@ public class THOMAS.MappingAlgorithm : Object {
             });
         } else {
             /* Forwärtsbewegung */
-            move (200, STEP_MOVING_TIME);
+            move (150, STEP_MOVING_TIME);
         }
 
         /* Neue Messreihe beginnen */
