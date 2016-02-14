@@ -36,7 +36,7 @@ public class THOMAS.RemoteServer : Object {
     private MotorControl? motor_control = null;
     private Relais? relais = null;
     private Camera? camera = null;
-    private NetworkManager network_manager;
+    private NetworkManager? network_manager = null;
     private SystemInformation system_information;
 
     private DBusServer? dbus_server = null;
@@ -58,7 +58,7 @@ public class THOMAS.RemoteServer : Object {
 
     private MappingAlgorithm? mapping_algorithm = null;
 
-    public RemoteServer (Arduino? arduino, MotorControl? motor_control, Relais? relais, Camera? camera, NetworkManager network_manager, SystemInformation system_information, uint16 port) {
+    public RemoteServer (Arduino? arduino, MotorControl? motor_control, Relais? relais, Camera? camera, NetworkManager? network_manager, SystemInformation system_information, uint16 port) {
         this.arduino = arduino;
         this.motor_control = motor_control;
         this.relais = relais;
@@ -265,7 +265,10 @@ public class THOMAS.RemoteServer : Object {
     }
 
     public bool force_telemetry_update () {
-        network_manager.force_update ();
+        if (network_manager != null) {
+            network_manager.force_update ();
+        }
+
         system_information.force_update ();
 
         return true;

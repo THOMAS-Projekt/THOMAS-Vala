@@ -25,6 +25,7 @@ public class THOMAS.Main : Object {
         { "relais-tty", 'R', 0, OptionArg.STRING, ref relais_tty, "Port der Relaiskarte", "PORT/NONE" },
         { "camera", 'C', 0, OptionArg.INT, ref camera_id, "ID der Kamera", "ID/-1" },
         { "network-interface", 'N', 0, OptionArg.STRING, ref network_interface, "Das fuer Statistiken zu benutzende Netzwerkinterface", "INTERFACE" },
+        { "no-network-manager", 'n', 0, OptionArg.NONE, ref no_network_manager, "Nicht mit dem Network-Manager verbinden", null },
         { "enable-minimalmode", 'm', 0, OptionArg.NONE, ref enable_minimalmode, "Aktiviert den Minimalmodus des Arduinos", null },
         { "html-directory", 'H', 0, OptionArg.STRING, ref html_directory, "Pfad zum HTML-Verzeichnis", "PFAD" },
         { null }
@@ -36,6 +37,7 @@ public class THOMAS.Main : Object {
     private static string? relais_tty = null;
     private static int camera_id = 0;
     private static string? network_interface = null;
+    private static bool no_network_manager = false;
     private static bool enable_minimalmode = false;
     private static string? html_directory = null;
 
@@ -60,7 +62,7 @@ public class THOMAS.Main : Object {
     private MainLoop main_loop;
 
     private Logger logger;
-    private NetworkManager network_manager;
+    private NetworkManager? network_manager = null;
     private Arduino? arduino = null;
     private MotorControl? motor_control = null;
     private Relais? relais = null;
@@ -79,9 +81,11 @@ public class THOMAS.Main : Object {
             logger.set_debug_mode (debug_mode);
         }
 
-        debug ("Initialisiere Netzwerk-Manager...");
-        {
-            network_manager = new NetworkManager ();
+        if (!no_network_manager) {
+            debug ("Initialisiere Netzwerk-Manager...");
+            {
+                network_manager = new NetworkManager ();
+            }
         }
 
         if (arduino_tty == null || arduino_tty.down () != "none") {
@@ -162,23 +166,25 @@ public class THOMAS.Main : Object {
     }
 
     private void connect_signals () {
-        network_manager.ssid_changed.connect ((ssid) => {
-            string checked_ssid = (ssid == null ? "Nicht verbunden" : ssid);
+        if (network_manager != null) {
+            network_manager.ssid_changed.connect ((ssid) => {
+                string checked_ssid = (ssid == null ? "Nicht verbunden" : ssid);
 
-            remote_server.wifi_ssid_changed (checked_ssid);
+                remote_server.wifi_ssid_changed (checked_ssid);
 
-            if (arduino != null) {
-                arduino.update_ssid (checked_ssid);
-            }
-        });
+                if (arduino != null) {
+                    arduino.update_ssid (checked_ssid);
+                }
+            });
 
-        network_manager.signal_strength_changed.connect ((signal_strength) => {
-            remote_server.wifi_signal_strength_changed (signal_strength);
+            network_manager.signal_strength_changed.connect ((signal_strength) => {
+                remote_server.wifi_signal_strength_changed (signal_strength);
 
-            if (arduino != null) {
-                arduino.update_signal_strength (signal_strength);
-            }
-        });
+                if (arduino != null) {
+                    arduino.update_signal_strength (signal_strength);
+                }
+            });
+        }
 
         system_information.cpu_load_changed.connect ((cpu_load) => {
             remote_server.cpu_load_changed (cpu_load);
