@@ -26,6 +26,7 @@ public class THOMAS.Main : Object {
         { "camera", 'C', 0, OptionArg.INT, ref camera_id, "ID der Kamera", "ID/-1" },
         { "network-interface", 'N', 0, OptionArg.STRING, ref network_interface, "Das fuer Statistiken zu benutzende Netzwerkinterface", "INTERFACE" },
         { "no-network-manager", 'n', 0, OptionArg.NONE, ref no_network_manager, "Nicht mit dem Network-Manager verbinden", null },
+        { "webserver-port", 'W', 0, OptionArg.INT, ref webserver_port, "Port des Webservers", "PORT" },
         { "enable-minimalmode", 'm', 0, OptionArg.NONE, ref enable_minimalmode, "Aktiviert den Minimalmodus des Arduinos", null },
         { "html-directory", 'H', 0, OptionArg.STRING, ref html_directory, "Pfad zum HTML-Verzeichnis", "PFAD" },
         { null }
@@ -38,6 +39,7 @@ public class THOMAS.Main : Object {
     private static int camera_id = 0;
     private static string? network_interface = null;
     private static bool no_network_manager = false;
+    private static int webserver_port = 8080;
     private static bool enable_minimalmode = false;
     private static string? html_directory = null;
 
@@ -136,9 +138,9 @@ public class THOMAS.Main : Object {
         {
             try {
                 webserver = new Webserver (remote_server, html_directory == null ? Environment.get_current_dir () : html_directory);
-                webserver.listen_all (8080, 0);
+                webserver.listen_all (webserver_port, 0);
 
-                debug ("Webserver auf Port 8080 gestartet.");
+                debug ("Webserver auf Port %i gestartet.", webserver_port);
             } catch (Error e) {
                 warning ("Webserver konnte nicht gestartet werden: %s", e.message);
             }

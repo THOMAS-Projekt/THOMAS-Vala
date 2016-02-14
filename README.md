@@ -47,6 +47,7 @@ Application Options:
   -C, --camera=ID/-1                    ID der Kamera
   -N, --network-interface=INTERFACE     Das fuer Statistiken zu benutzende Netzwerkinterface
   -n, --no-network-manager              Nicht mit dem Network-Manager verbinden
+  -W, --webserver-port=PORT             Port des Webservers
   -m, --enable-minimalmode              Aktiviert den Minimalmodus des Arduinos
   -H, --html-directory=PFAD             Pfad zum HTML-Verzeichnis
 ```
