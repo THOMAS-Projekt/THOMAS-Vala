@@ -9,6 +9,7 @@ vala_precompile (VALA_C
     Relais.vala
     RemoteServer.vala
     Webserver.vala
+    SlackIntegration.vala
     ServiceProvider.vala
     Camera.vala
     UDPStreamer.vala

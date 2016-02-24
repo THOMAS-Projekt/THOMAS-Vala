@@ -27,6 +27,7 @@ public class THOMAS.Main : Object {
         { "network-interface", 'N', 0, OptionArg.STRING, ref network_interface, "Das fuer Statistiken zu benutzende Netzwerkinterface", "INTERFACE" },
         { "no-network-manager", 'n', 0, OptionArg.NONE, ref no_network_manager, "Nicht mit dem Network-Manager verbinden", null },
         { "webserver-port", 'W', 0, OptionArg.INT, ref webserver_port, "Port des Webservers", "PORT" },
+        { "slack-token", 'S', 0, OptionArg.STRING, ref slack_api_token, "API-Token für die Slack-Integration", "TOKEN/NONE" },
         { "enable-minimalmode", 'm', 0, OptionArg.NONE, ref enable_minimalmode, "Aktiviert den Minimalmodus des Arduinos", null },
         { "html-directory", 'H', 0, OptionArg.STRING, ref html_directory, "Pfad zum HTML-Verzeichnis", "PFAD" },
         { null }
@@ -40,6 +41,7 @@ public class THOMAS.Main : Object {
     private static string? network_interface = null;
     private static bool no_network_manager = false;
     private static int webserver_port = 8080;
+    private static string? slack_api_token = null;
     private static bool enable_minimalmode = false;
     private static string? html_directory = null;
 
@@ -71,6 +73,7 @@ public class THOMAS.Main : Object {
     private Camera? camera = null;
     private RemoteServer remote_server;
     private Webserver webserver;
+    private SlackIntegration? slack_integration = null;
     private ServiceProvider service_provider;
     private SystemInformation system_information;
 
@@ -143,6 +146,14 @@ public class THOMAS.Main : Object {
                 debug ("Webserver auf Port %i gestartet.", webserver_port);
             } catch (Error e) {
                 warning ("Webserver konnte nicht gestartet werden: %s", e.message);
+            }
+        }
+
+        if (slack_api_token != null && slack_api_token.down () != "none") {
+            debug ("Initialisiere Slack-Integration...");
+            {
+                slack_integration = new SlackIntegration (slack_api_token);
+                slack_integration.setup ();
             }
         }
 
