@@ -23,6 +23,8 @@ public class THOMAS.Camera : Object {
 
     public signal void frame_captured (Gdk.Pixbuf frame);
 
+    public Gdk.Pixbuf? last_frame { get; private set; default = null; }
+
     private OpenCV.Capture capture;
 
     /* Zählt die Objekte die auf */
@@ -82,6 +84,8 @@ public class THOMAS.Camera : Object {
                                                      raw_frame.width,
                                                      raw_frame.height,
                                                      raw_frame.width_step);
+
+        last_frame = frame;
 
         frame_captured (frame);
     }

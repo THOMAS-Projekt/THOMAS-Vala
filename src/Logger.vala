@@ -37,6 +37,21 @@ public class THOMAS.Logger : Object {
             return;
         }
 
+        /*
+         * Spam von Soup rausfiltern
+         * TODO: Sauberere Möglichkeit zum Deaktivieren der Logausgabe suche
+         */
+        if (message.has_prefix ("received frame") ||
+            message.has_prefix ("message: delivering") ||
+            message.has_prefix ("received ping, responding") ||
+            message.has_prefix ("starting output source") ||
+            message.has_prefix ("queued") ||
+            message.has_prefix ("sent frame") ||
+            message.has_prefix ("stopping output source") ||
+            message.has_prefix ("received control frame")) {
+            return;
+        }
+
         string[] lines = message.split ("\n");
         int header_length = 0;
 

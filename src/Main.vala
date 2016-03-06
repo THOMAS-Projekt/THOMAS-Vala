@@ -152,7 +152,7 @@ public class THOMAS.Main : Object {
         if (slack_api_token != null && slack_api_token.down () != "none") {
             debug ("Initialisiere Slack-Integration...");
             {
-                slack_integration = new SlackIntegration (slack_api_token);
+                slack_integration = new SlackIntegration (camera, slack_api_token);
                 slack_integration.setup ();
             }
         }
