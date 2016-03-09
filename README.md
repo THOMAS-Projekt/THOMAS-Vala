@@ -7,7 +7,7 @@ Vala-Implementierung des Servers
 ## Kompatibilität mit Ubuntu 14.04
 ### Valac 0.30 installieren
 ```
-sudo add-apt-repostory ppa:vala-team/ppa
+sudo add-apt-repository ppa:vala-team/ppa
 sudo apt-get update
 sudo apt-get install valac-0.30
 ```
