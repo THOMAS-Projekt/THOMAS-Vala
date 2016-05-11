@@ -32,7 +32,7 @@ make
 ```
 
 ## Network Manager einrichten:
-´´`
+```
 nmcli device wifi connect SSID password 'coolesPassword'
 ```
 
