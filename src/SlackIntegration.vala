@@ -232,6 +232,7 @@ public class THOMAS.SlackIntegration : Soup.Session {
                 return false;
             }
 
+            
             send_web_api_request ("files.upload", { "as_user", "true",
                                                     "filename", "Einzelbild.jpg",
                                                     "channels", channel },
@@ -249,9 +250,13 @@ public class THOMAS.SlackIntegration : Soup.Session {
 
             Process.spawn_sync (null, { "/sbin/ifconfig" }, Environ.@get (), SpawnFlags.SEARCH_PATH, null, out output);
 
-            send_web_api_request ("chat.postMessage", { "channel", channel,
-                                                        "as_user", "true",
-                                                        "text", "```%s```".printf (output) });
+            new Thread<int> (null, () => {
+                send_web_api_request ("chat.postMessage", { "channel", channel,
+                                                            "as_user", "true",
+                                                            "text", "```%s```".printf (output) });
+
+                return 0;
+            });
         } catch (Error e) {
             warning ("Abrufen der Netzwerkinformationen für die Slack-Integration fehlgeschlagen: %s", e.message);
         }
