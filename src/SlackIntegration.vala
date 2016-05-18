@@ -174,25 +174,29 @@ public class THOMAS.SlackIntegration : Soup.Session {
     }
 
     private void process_command (string command, string channel) {
-        debug ("Verarbeite Befehl: %s", command);
+        new Thread<int> (null, () => {
+            debug ("Verarbeite Befehl: %s", command);
 
-        if (string_contains (command.down (), { "mache", "nehme", "nimm", "foto", "bild", "aufnehmen" }, 2)) {
-            send_camera_picture (channel);
-        } else if (string_contains (command.down (), { "wie ist", "wie lautet", "ip", "adresse" }, 2)) {
-            send_ifconfig (channel);
-        } else if (string_contains (command.down (), { "hallo", "hello", "moin", "hi" })) {
-            send_web_api_request ("chat.postMessage", { "channel", channel,
-                                                        "as_user", "true",
-                                                        "text", random_answer ({ "Moin!", "Wie geht's?", "Hey, schön dich zu sehen!", "What!? Es gibt Menschen in diesem Channel?" }) });
-        } else if (string_contains (command.down (), { "du", "dein", "dich", "heißt", "bedeutet", "name", "thomas", "wofür steht", "heißt", "bedeutet", "bezeichnung", "nennen" }, 2)) {
-            send_web_api_request ("chat.postMessage", { "channel", channel,
-                                                        "as_user", "true",
-                                                        "text", "Die Abkürzung THOMAS steht für _Terrestrial Hightech Observation Machinery and Autonomous System_" });
-        } else if (string_contains (command.down (), { "ja", "jo", "jo", "genau", "ne", "nein" })) {
-            send_web_api_request ("chat.postMessage", { "channel", channel,
-                                                        "as_user", "true",
-                                                        "text", "Hätte ich nicht gedacht..." });
-        }
+            if (string_contains (command.down (), { "mache", "nehme", "nimm", "foto", "bild", "aufnehmen" }, 2)) {
+                send_camera_picture (channel);
+            } else if (string_contains (command.down (), { "wie ist", "wie lautet", "ip", "adresse" }, 2)) {
+                send_ifconfig (channel);
+            } else if (string_contains (command.down (), { "hallo", "hello", "moin", "hi" })) {
+                send_web_api_request ("chat.postMessage", { "channel", channel,
+                                                            "as_user", "true",
+                                                            "text", random_answer ({ "Moin!", "Wie geht's?", "Hey, schön dich zu sehen!", "What!? Es gibt Menschen in diesem Channel?" }) });
+            } else if (string_contains (command.down (), { "du", "dein", "dich", "heißt", "bedeutet", "name", "thomas", "wofür steht", "heißt", "bedeutet", "bezeichnung", "nennen" }, 2)) {
+                send_web_api_request ("chat.postMessage", { "channel", channel,
+                                                            "as_user", "true",
+                                                            "text", "Die Abkürzung THOMAS steht für _Terrestrial Hightech Observation Machinery and Autonomous System_" });
+            } else if (string_contains (command.down (), { "ja", "jo", "jo", "genau", "ne", "nein" })) {
+                send_web_api_request ("chat.postMessage", { "channel", channel,
+                                                            "as_user", "true",
+                                                            "text", "Hätte ich nicht gedacht..." });
+            }
+
+            return 0;
+        });
     }
 
     private void send_camera_picture (string channel) {
@@ -232,11 +236,13 @@ public class THOMAS.SlackIntegration : Soup.Session {
                 return false;
             }
 
-            
-            send_web_api_request ("files.upload", { "as_user", "true",
-                                                    "filename", "Einzelbild.jpg",
-                                                    "channels", channel },
-                                  "file", "frame.jpg", "image/jpeg", frame_data);
+            new Thread<int> (null, () => {
+                send_web_api_request ("files.upload", { "as_user", "true",
+                                                        "filename", "Einzelbild.jpg",
+                                                        "channels", channel },
+                                      "file", "frame.jpg", "image/jpeg", frame_data);
+                return 0;
+            });
 
             camera.stop ();
 
