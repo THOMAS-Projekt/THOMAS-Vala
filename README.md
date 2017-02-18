@@ -56,3 +56,7 @@ Application Options:
   -m, --enable-minimalmode              Aktiviert den Minimalmodus des Arduinos
   -H, --html-directory=PFAD             Pfad zum HTML-Verzeichnis
 ```
+
+## Hinweis
+Sollte es beim erneuten Verbinden des Kamerastreams zu einem Speicherzugriffsfehler kommen, so ist die tbb2-Library zu neu.
+Es wird empfohlen die tbb2-Library `4.4~20151115-0ubuntu3` zu verwenden. Die Version `4.4~20160526-0ubuntu1`, die Standard in aktuellen Ubuntuversionen ist, führt zu dem besagten Speicherzugriffsfehler.
